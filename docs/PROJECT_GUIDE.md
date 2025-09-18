@@ -83,7 +83,7 @@ We’re building a **web-based study platform** for the Certificate of Qualifica
   - **Routers** → FastAPI routes  
   - **Services** → domain logic  
   - **Repositories** → DB persistence  
-  - **Providers/Adapters** → external APIs (LLM, embeddings)  
+  - **Providers/Adapters** → external APIs (LLM, embeddings)
 
 ---
 
