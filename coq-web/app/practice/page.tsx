@@ -100,9 +100,9 @@ function BottomBar({ onSend }: { onSend: (text: string) => void }) {
 
 export default function HomeMock() {
   const [messages, setMessages] = useState<Array<{ role: "user" | "assistant"; content: string }>>([
-    { role: "assistant", content: "Hi Carter! I’m your study buddy. Ask me anything about your course or notes." },
-    { role: "user", content: "Summarize Chapter 3 for me." },
-    { role: "assistant", content: "Here’s a concise overview of Chapter 3… (placeholder text)." },
+    // { role: "assistant", content: "Hi Carter! I’m your study buddy. Ask me anything about your course or notes." },
+    // { role: "user", content: "Summarize Chapter 3 for me." },
+    // { role: "assistant", content: "Here’s a concise overview of Chapter 3… (placeholder text)." },
   ]);
 
   return (
