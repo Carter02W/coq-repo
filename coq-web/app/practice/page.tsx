@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { use, useState } from "react";
 
 const Icon = ({ label }: { label: string }) => (
   <span className="select-none text-xs font-semibold tracking-wide uppercase opacity-80">
@@ -69,7 +69,11 @@ function ChatBubble({ role, children }: { role: "user" | "assistant"; children: 
   );
 }
 
-function BottomBar({ onSend }: { onSend: (text: string) => void }) {
+type BottomBarProps = {
+  onSend: (userInput: string) => void | Promise<void>;
+};
+
+function BottomBar({ onSend }: BottomBarProps) {
   const [value, setValue] = useState("");
   return (
     <div className="fixed inset-x-0 bottom-0 z-40 flex justify-center px-4 pb-4 pt-2">
@@ -105,6 +109,29 @@ export default function HomeMock() {
     // { role: "assistant", content: "Here’s a concise overview of Chapter 3… (placeholder text)." },
   ]);
 
+  const handleSend = async(userInput: string) => {
+    // 1) show the user's message immediately
+    setMessages(prev => [...prev, { role: "user", content: userInput }]);
+
+    try {
+      // 2) call python backend
+      const res = await fetch("http://127.0.0.1:8080/chat", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ message: userInput}),
+      });
+
+      if (!res.ok) throw new Error('HTTP ${res.status}');
+      const data = await res.json();
+
+      // 3) append assistant response
+      setMessages(prev => [...prev, { role: "assistant", content: data.reply }]);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setMessages(prev => [...prev, {role: "assistant", content: `Sorry, request failed: ${msg}` },
+      ]);
+    }
+  };
   return (
     <div className="relative min-h-dvh bg-[radial-gradient(ellipse_at_top,rgba(120,119,198,0.08),transparent_45%),radial-gradient(ellipse_at_bottom,rgba(30,30,30,0.06),transparent_55%)] text-neutral-900 antialiased dark:text-neutral-100">
       <HeaderNav />
@@ -133,9 +160,7 @@ export default function HomeMock() {
 
 
       <BottomBar
-        onSend={(text) =>
-          setMessages((prev) => [...prev, { role: "user", content: text }, { role: "assistant", content: "(mock) This is where a response would appear." }])
-        }
+        onSend={handleSend}
       />
     </div>
   );
