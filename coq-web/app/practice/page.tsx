@@ -52,7 +52,12 @@ function HeaderNav() {
   );
 }
 
-function ChatBubble({ role, children }: { role: "user" | "assistant"; children: React.ReactNode }) {
+type ChatBubbleProps = {
+  role: "user" | "assistant";
+  children: React.ReactNode;
+};
+
+function ChatBubble({ role, children }: ChatBubbleProps) {
   const isUser = role === "user";
   return (
     <div className={`flex w-full ${isUser ? "justify-end" : "justify-start"}`}>
