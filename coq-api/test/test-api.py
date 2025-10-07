@@ -4,9 +4,17 @@ from flask_cors import CORS
 from openai import OpenAI
 import os
 from pathlib import Path
+from chatDatabase import ChatDatabase
 
 app = Flask(__name__)
 CORS(app) #allow requests from my Next.js dev server
+
+db = ChatDatabase()
+
+db.find_docs()
+
+
+
 
 '''
 gets the absolute path of the current (__file__) with .resolve, then runs through each parent and adds /.env.local to it, 
