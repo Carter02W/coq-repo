@@ -1,7 +1,7 @@
 # 📘 Project Guide: C of Q Exam Study App
 
 ## 1. Project Overview
-We’re building a **web-based study platform** for the Certificate of Qualification (C of Q) electrical exam.
+We’re building a **web-based study platform** for the Certificate of Qualification (C of Q) exam.
 
 - **Frontend:** Next.js 14 (TypeScript + React, App Router, Tailwind, shadcn/ui)  
 - **Backend:** FastAPI (Python, async), modular with Clean Architecture  
