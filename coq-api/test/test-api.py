@@ -11,11 +11,6 @@ CORS(app) #allow requests from my Next.js dev server
 
 db = ChatDatabase()
 
-db.find_docs()
-
-
-
-
 '''
 gets the absolute path of the current (__file__) with .resolve, then runs through each parent and adds /.env.local to it, 
 if that path actually exists then it uses that correct path for the load_dotenv path.
@@ -35,6 +30,22 @@ print("api key found?", bool(apiKey)) # quick check that api key is found
 
 client = OpenAI(api_key= apiKey)
 
+'''
+makes a list of the first ten documents in the chatsColl collection
+'''
+def chatList():
+    docsArray = []
+    for i, docs in enumerate(db.chatsColl.find({}, {"_id": 0}).sort("_id", -1)):
+        if i >= 3:
+            break
+        docsArray.append(docs)
+        
+    print(docsArray)
+    return docsArray
+
+'''
+main chat method gets called when user sends input for page.tsx and posts json reply to be added to a <ChatBubble>
+'''
 @app.route("/chat", methods=["POST"])
 def chat():
     data = request.get_json(force=True)
@@ -46,13 +57,15 @@ def chat():
     #call openAI
     resp = client.chat.completions.create(
         model="gpt-5-nano",
-        messages=[
-            {"role": "system", "content": "You are a helpful assistant."},
-            {"role": "user", "content": user_input}
-        ],
+        messages= [{"role": "system", "content": "You are a helpful assistant."}] + chatList() +
+            [{"role": "user", "content": user_input}]
     )
 
     reply = resp.choices[0].message.content
+
+    db.chatsColl.insert_one({"role": "user", "content": user_input}) # adds the users input to the collection
+    db.chatsColl.insert_one({"role": "assistant", "content": reply}) # adds the response to the collection
+    
     return jsonify({"reply": reply})
 
 
@@ -65,13 +78,3 @@ def home():
 
 if __name__ == "__main__":
     app.run(host="127.0.0.1", port=8080, debug=True)
-
-
-
-# response = client.responses.create(
-#   model="gpt-5-nano",
-#   input="how many continents are there on earth?",
-#   store=True,
-# )
-
-#print(response.output_text);

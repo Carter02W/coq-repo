@@ -108,7 +108,7 @@ function BottomBar({ onSend }: BottomBarProps) {
 }
 
 export default function HomeMock() {
-  const [messages, setMessages] = useState<Array<{ role: "user" | "assistant"; content: string }>>([
+  const [messages, setMessages] = useState<Array<{ role: "user" | "assistant"; content: string }>>([  // right now this isnt updating with the db. if a chat is deleted it isnt updated here
     // { role: "assistant", content: "Hi Carter! I’m your study buddy. Ask me anything about your course or notes." },
     // { role: "user", content: "Summarize Chapter 3 for me." },
     // { role: "assistant", content: "Here’s a concise overview of Chapter 3… (placeholder text)." },
@@ -128,9 +128,10 @@ export default function HomeMock() {
 
       if (!res.ok) throw new Error('HTTP ${res.status}');
       const data = await res.json();
-
+      console.log(data);
       // 3) append assistant response
       setMessages(prev => [...prev, { role: "assistant", content: data.reply }]);
+      console.log(messages);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       setMessages(prev => [...prev, {role: "assistant", content: `Sorry, request failed: ${msg}` },
