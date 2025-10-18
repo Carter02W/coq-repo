@@ -31,15 +31,21 @@ print("api key found?", bool(apiKey)) # quick check that api key is found
 client = OpenAI(api_key= apiKey)
 
 '''
+find the current sessionId
+'''
+sessId = db.sessionId
+
+'''
 makes a list of the first ten documents in the chatsColl collection
 '''
 def chatList():
     docsArray = []
-    for i, docs in enumerate(db.chatsColl.find({}, {"_id": 0}).sort("_id", -1)):
-        if i >= 3:
+    for i, docs in enumerate(db.chatsColl.find({"sessionId": db.sessionId}, {"_id": 0}).sort("_id", -1)):
+        if i >= 10:
             break
         docsArray.append(docs)
         
+    print(db.sessionId)
     print(docsArray)
     return docsArray
 
@@ -63,8 +69,11 @@ def chat():
 
     reply = resp.choices[0].message.content
 
-    db.chatsColl.insert_one({"role": "user", "content": user_input}) # adds the users input to the collection
-    db.chatsColl.insert_one({"role": "assistant", "content": reply}) # adds the response to the collection
+    db.add_message("user", user_input) # adds the users input to the collection
+    db.add_message("assistant", reply) # adds the response to the collection
+
+    # db.chatsColl.insert_one({"role": "user", "content": user_input}) 
+    # db.chatsColl.insert_one({"role": "assistant", "content": reply}) 
     
     return jsonify({"reply": reply})
 
