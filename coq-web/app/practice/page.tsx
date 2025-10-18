@@ -80,10 +80,19 @@ type BottomBarProps = {
 
 function BottomBar({ onSend }: BottomBarProps) {
   const [value, setValue] = useState("");
+
+  const handleSubmit = (e?: React.FormEvent) => {
+    e?.preventDefault();
+    const v = value.trim();
+    if (!v) return;
+    void onSend(v);
+    setValue("");
+  };
+
   return (
     <div className="fixed inset-x-0 bottom-0 z-40 flex justify-center px-4 pb-4 pt-2">
       <div className="w-full max-w-3xl rounded-full border border-black/5 bg-white/80 shadow-2xl backdrop-blur supports-[backdrop-filter]:bg-white/60 dark:border-white/10 dark:bg-neutral-900/60">
-        <div className="flex items-center gap-2 px-3 py-2 sm:px-4 sm:py-2.5">
+        <form onSubmit={handleSubmit} className="flex items-center gap-2 px-3 py-2 sm:px-4 sm:py-2.5">
           <input
             placeholder="Send a message…"
             value={value}
@@ -91,17 +100,13 @@ function BottomBar({ onSend }: BottomBarProps) {
             className="flex-1 bg-transparent px-1 text-[15px] outline-none placeholder:text-black/40 dark:placeholder:text-white/40"
           />
           <button
-            onClick={() => {
-              if (!value.trim()) return;
-              onSend(value.trim());
-              setValue(""); //Clearing the input after send is clicked
-            }}
+            type="submit"              // <— important
             className="rounded-full px-3 py-1.5 text-sm font-medium hover:bg-black/5 active:scale-[0.98] dark:hover:bg-white/10"
             aria-label="Send"
           >
             Send
           </button>
-        </div>
+        </form>
       </div>
     </div>
   );
