@@ -2,55 +2,93 @@
 
 import { useState } from "react";
 
-const Icon = ({ label }: { label: string }) => (
-  <span className="select-none text-xs font-semibold tracking-wide uppercase opacity-80">
-    {label}
-  </span>
-);
 
-function HeaderNav() {
+type SideNavProps = {
+  open: boolean;
+  onClose: () => void;
+};
+
+function SideNav({open, onClose}: SideNavProps) {
   return (
-    <header className="pointer-events-none fixed inset-x-0 top-4 z-50 flex justify-center px-4 ">
-      <div className="pointer-events-auto w-full max-w-6xl rounded-full border border-black/5 bg-white/70 shadow-xl shadow-black/5 backdrop-blur supports-[backdrop-filter]:bg-white/60 dark:border-white/10 dark:bg-neutral-900/60 dark:shadow-black/20">
-        <nav className="flex items-center gap-2 px-3 py-2 sm:gap-3 sm:px-4 sm:py-3">
-
-          { /* Logo */ }
-          <div className="mr-2 flex items-center gap-2 rounded-full bg-gradient-to-br from-indigo-500 to-violet-500 px-3 py-1.5 text-white sm:mr-3 sm:px-4">
-            <span className="text-xs font-semibold sm:text-sm">COQ</span>
-          </div>
-
-          {/* Buttons, left -> right */}
-          <button className="rounded-full px-3 py-1.5 text-sm hover:bg-black/5 dark:hover:bg-white/10">
-          <Icon label="Analysis" />
-          </button>
-          <button className="rounded-full px-3 py-1.5 text-sm hover:bg-black/5 dark:hover:bg-white/10">
-          <Icon label="Flashcards" />
-          </button>
-          <button className="rounded-full px-3 py-1.5 text-sm hover:bg-black/5 dark:hover:bg-white/10">
-          <Icon label="Notes" />
-          </button>
-          <button className="rounded-full px-3 py-1.5 text-sm hover:bg-black/5 dark:hover:bg-white/10">
-          <Icon label="Q&A" />
-          </button>
-
-
-          {/* Spacer */}
-          <div className="mx-2 hidden h-5 w-px bg-black/10 dark:bg-white/15 sm:block" />
-          <div className="flex-1" />
-
-
-          {/* User button */}
-          <button className="group mr-1 flex items-center gap-2 rounded-full px-2 py-1.5 pr-2.5 hover:bg-black/5 dark:hover:bg-white/10">
-            <div className="grid h-8 w-8 place-items-center overflow-hidden rounded-full bg-gradient-to-br from-amber-400 to-pink-500 text-xs font-bold text-white shadow">
-            U
+    <>
+      <aside
+        id="app-sidenav"
+        className={[
+          "fixed inset-y-0 left-0 z-50 w-64 pointer-events-auto",
+          "transition-transform duration-300 will-change-transform",
+          open ? "translate-x-0" : "-translate-x-full",
+          "lg:translate-x-0",
+        ].join(" ")}
+        aria-hidden={!open}
+      >
+        <div className="flex h-dvh gap-2 border-r border-r-black/10 bg-neutral-50/30 dark:border-r-white/10 dark:bg-black/30 backdrop-blur shadow-xl">
+          <nav className="flex h-full flex-col items-stretch w-full gap-1 p-3 sm:p-4">
+            {/* Brand + close */}
+            <div className="mb-1 flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-500 px-3 py-2 text-white shadow">
+                <span className="text-sm font-semibold tracking-wide">COQ</span>
+              </div>
+              <button
+                onClick={onClose}
+                className="rounded-md px-2 py-1 text-xs hover:bg-black/5 dark:hover:bg-white/10 lg:hidden"
+                aria-label="Close sidebar"
+              >
+                Close
+              </button>
             </div>
-            <span className="hidden text-sm opacity-80 sm:block">Log in</span>
-          </button>
-        </nav>
-      </div>
-    </header>
+
+            {/* Primary Nav */}
+            {["FLASHCARDS", "NOTES", "Q&A", "ANALYSIS"].map((label) => (
+              <button
+                key={label}
+                className="flex items-center gap-2 rounded-md px-3 py-2 text-sm text-left hover:bg-black/5 dark:hover:bg-white/10"
+              >
+                {label}
+              </button>
+            ))}
+
+            <div className="my-2 h-px bg-black/35 dark:bg-white/15" />
+
+            {/* Chats */}
+            <div className="flex items-center gap-2 rounded-md px-3 py-2 text-sm text-left opacity-65">
+              Chats
+            </div>
+            <section className="flex-1 overflow-y-auto rounded-md scrollbar-hide">
+              <ul className="space-y-1 pr-1">
+                {Array.from({ length: 25 }, (_, i) => i + 1).map((num) => (
+                  <li key={num}>
+                    <button
+                      data-chat-id={num}
+                      className="w-full truncate rounded-md px-3 py-2 text-left text-sm hover:bg-black/5 dark:hover:bg:white/10"
+                    >
+                      Chat {num}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </section>
+
+            <div className="my-2 h-px bg-black/35 dark:bg-white/15" />
+
+            {/* Login pill */}
+            <div className="mb-1 flex items-center gap-2 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-500 px-3 py-2 text-white shadow">
+              <span className="text-sm font-semibold tracking-wide">CW</span>
+            </div>
+          </nav>
+        </div>
+      </aside>
+
+      {/* Drawer backdrop (only below lg) */}
+      {/* Clicking it closes the drawer */}
+      <button
+        onClick={onClose}
+        className={`fixed inset-0 z-40 bg-black/40 lg:hidden ${open ? "block" : "hidden"}`}
+        aria-label="Close sidebar backdrop"
+      />
+    </>
   );
 }
+
 
 type ChatBubbleProps = {
   role: "user" | "assistant";
@@ -76,9 +114,10 @@ function ChatBubble({ role, children }: ChatBubbleProps) {
 
 type BottomBarProps = {
   onSend: (userInput: string) => void | Promise<void>;
+  className?: string;
 };
 
-function BottomBar({ onSend }: BottomBarProps) {
+function BottomBar({ onSend, className = "" }: BottomBarProps) {
   const [value, setValue] = useState("");
 
   const handleSubmit = (e?: React.FormEvent) => {
@@ -90,7 +129,7 @@ function BottomBar({ onSend }: BottomBarProps) {
   };
 
   return (
-    <div className="fixed inset-x-0 bottom-0 z-40 flex justify-center px-4 pb-4 pt-2">
+    <div className={`fixed bottom-0 z-40 flex justify-center px-4 pb-4 pt-2 ${className}`}>
       <div className="w-full max-w-3xl rounded-full border border-black/5 bg-white/80 shadow-2xl backdrop-blur supports-[backdrop-filter]:bg-white/60 dark:border-white/10 dark:bg-neutral-900/60">
         <form onSubmit={handleSubmit} className="flex items-center gap-2 px-3 py-2 sm:px-4 sm:py-2.5">
           <input
@@ -113,6 +152,8 @@ function BottomBar({ onSend }: BottomBarProps) {
 }
 
 export default function HomeMock() {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
   const [messages, setMessages] = useState<Array<{ role: "user" | "assistant"; content: string }>>([  // right now this isnt updating with the db. if a chat is deleted it isnt updated here
     // { role: "assistant", content: "Hi Carter! I’m your study buddy. Ask me anything about your course or notes." },
     // { role: "user", content: "Summarize Chapter 3 for me." },
@@ -136,43 +177,51 @@ export default function HomeMock() {
       console.log(data);
       // 3) append assistant response
       setMessages(prev => [...prev, { role: "assistant", content: data.reply }]);
-      console.log(messages);
+    
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       setMessages(prev => [...prev, {role: "assistant", content: `Sorry, request failed: ${msg}` },
       ]);
     }
   };
-  return (
-    <div className="relative min-h-dvh bg-[radial-gradient(ellipse_at_top,rgba(120,119,198,0.08),transparent_45%),radial-gradient(ellipse_at_bottom,rgba(30,30,30,0.06),transparent_55%)] text-neutral-900 antialiased dark:text-neutral-100">
-      <HeaderNav />
+    return (
+  <div className="relative min-h-dvh bg-[radial-gradient(ellipse_at_top,rgba(120,119,198,0.08),transparent_45%),radial-gradient(ellipse_at_bottom,rgba(30,30,30,0.06),transparent_55%)] text-neutral-900 antialiased dark:text-neutral-100">
+      {/* sidebar toggle */}
+      <button onClick={() => setSidebarOpen(true)}
+        className="fixed left-3 top-3 z-[60] rounded-lg px-3 py-2 text-sm shadow ring-1 ring-black/10 backdrop-blur bg-white/70 dark:bg-neutral-900/70 dark:ring-white/10 lg:hidden"
+        aria-label="Open sidebar"
+        aria-expanded={sidebarOpen}
+        aria-controls="app-sidenav"
+        >
+        |||
+      </button>
 
+    <SideNav open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
-      {/* Page content spacing so header & bottombar don’t overlap */}
-      <div className="mx-auto flex w-full max-w-3xl flex-col gap-4 px-4 pb-32 pt-28 sm:gap-6 sm:pb-36">
-        {/* Title / empty state */}
+    {/* Main content (kept centered) */}
+    <div className="lg:pl-64">
+      <div className="mx-auto w-full max-w-3xl flex flex-col gap-4 px-4 pb-32 pt-28 sm:gap-6 sm:pb-36">
         {messages.length === 0 ? (
-        <div className="grid place-items-center py-28 text-center">
-          <h1 className="mb-2 text-2xl font-semibold sm:text-3xl">What are we studying today?</h1>
-          <p className="max-w-xl text-balance text-sm opacity-70">
-          Type a prompt below, or pick a tool from the header (Analysis, Flashcards, Notes, Q&A).
-          </p>
-        </div>
+          <div className="grid place-items-center py-28 text-center">
+            <h1 className="mb-2 text-2xl font-semibold sm:text-3xl">What are we studying today?</h1>
+            <p className="max-w-xl text-balance text-sm opacity-70">
+              Type a prompt below, or pick a tool from the header (Analysis, Flashcards, Notes, Q&amp;A).
+            </p>
+          </div>
         ) : (
-        <div className="flex flex-col gap-3">
-          {messages.map((m, i) => (
-          <ChatBubble key={i} role={m.role}>
-          {m.content}
-          </ChatBubble>
-          ))}
-        </div>
+          <div className="flex flex-col gap-3">
+            {messages.map((m, i) => (
+              <ChatBubble key={i} role={m.role}>
+                {m.content}
+              </ChatBubble>
+            ))}
+          </div>
         )}
       </div>
 
-
-      <BottomBar
-        onSend={handleSend}
-      />
+      {/* <ConversationNav />  ✅ add this outside main content */}
+      <BottomBar onSend={handleSend} className="left-0 right-0 lg:left-64"/>
     </div>
-  );
+  </div>
+);
 }
