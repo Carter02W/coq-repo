@@ -4,12 +4,30 @@ from flask_cors import CORS
 from openai import OpenAI
 import os
 from pathlib import Path
-from chatDatabase import ChatDatabase
+from datetime import datetime
+from messageDatabase import MessageDatabase
+from sessionDatabase import SessionDatabase
 
 app = Flask(__name__)
 CORS(app) #allow requests from my Next.js dev server
 
-db = ChatDatabase()
+sessionDB = SessionDatabase()
+#sessionDB.delete_all_sessions()
+
+# creating session on startup
+sessionDB.create_session()
+
+
+messageDB = MessageDatabase(session_db=sessionDB)
+
+#messageDB.delete_all_messages()
+
+if sessionDB.session_id:
+    print("session_id =" + sessionDB.session_id)
+
+else:
+    print("no session Id")
+
 
 '''
 gets the absolute path of the current (__file__) with .resolve, then runs through each parent and adds /.env.local to it, 
@@ -31,21 +49,21 @@ print("api key found?", bool(apiKey)) # quick check that api key is found
 client = OpenAI(api_key= apiKey)
 
 '''
-find the current sessionId
-'''
-sessId = db.sessionId
-
-'''
 makes a list of the first ten documents in the chatsColl collection
 '''
 def chatList():
     docsArray = []
-    for i, docs in enumerate(db.chatsColl.find({"sessionId": db.sessionId}, {"_id": 0}).sort("_id", -1)):
+    for i, docs in enumerate(messageDB.messagesColl.find({"sessionId": sessionDB.session_id}, {"_id": 0}).sort("_id", -1)):
         if i >= 10:
             break
+
+        # Convert datetime fields to ISO format strings
+        for key, value in docs.items():
+            if isinstance(value, datetime):
+                docs[key] = value.isoformat()
+
         docsArray.append(docs)
-        
-    print(db.sessionId)
+
     print(docsArray)
     return docsArray
 
@@ -59,7 +77,7 @@ def chat():
 
     if not user_input:
         return jsonify({"reply": "I didn't receive any text."}), 400  
-    
+
     #call openAI
     resp = client.chat.completions.create(
         model="gpt-5-nano",
@@ -69,14 +87,13 @@ def chat():
 
     reply = resp.choices[0].message.content
 
-    db.add_message("user", user_input) # adds the users input to the collection
-    db.add_message("assistant", reply) # adds the response to the collection
+    messageDB.add_message("user", user_input) # adds the users input to the collection
+    messageDB.add_message("assistant", reply) # adds the response to the collection
 
     # db.chatsColl.insert_one({"role": "user", "content": user_input}) 
     # db.chatsColl.insert_one({"role": "assistant", "content": reply}) 
     
     return jsonify({"reply": reply})
-
 
 
 @app.route("/", methods=["GET"])
@@ -86,4 +103,9 @@ def home():
 
 
 if __name__ == "__main__":
-    app.run(host="127.0.0.1", port=8080, debug=True)
+    try:
+        app.run(host="127.0.0.1", port=8080, debug=True, use_reloader=False)
+    finally:
+        # close DB clients on shutdown (see #2)
+        messageDB.client.close()
+        sessionDB.client.close()
