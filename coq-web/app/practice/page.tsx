@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 
 type SideNavProps = {
@@ -8,7 +8,39 @@ type SideNavProps = {
   onClose: () => void;
 };
 
+type ChatList = {
+  _id: string;
+  sessionId: string;
+  title: string;
+};
+
 function SideNav({open, onClose}: SideNavProps) {
+  const [chatList, setChatList] = useState<ChatList[]>([]);
+
+  // populating list of chats everytime the sideNav renders
+  useEffect(() => {
+    listChats();
+  }, []);
+
+  // listChats() fetches and creates an array(ChatList) of all current saved sessions 
+  async function listChats() {
+    const res = await fetch("http://127.0.0.1:8080/listChats");
+
+    const data = await res.json();
+    setChatList(data);
+  }
+
+  // createChat() triggered when new chat button is clicked, fetches and creates an array(ChatList) of all current saved sessions after a new session has been created. ps should there be a main list of sessions in test-api and these functions just updated it? 
+  async function createChat() {
+    const createChatFunc = await fetch("http://127.0.0.1:8080/createChat", {
+      method: "GET"
+    });
+
+    const data = await createChatFunc.json();
+    setChatList(data);
+
+  }
+
   return (
     <>
       <aside
@@ -19,7 +51,7 @@ function SideNav({open, onClose}: SideNavProps) {
           open ? "translate-x-0" : "-translate-x-full",
           "lg:translate-x-0",
         ].join(" ")}
-        aria-hidden={!open}
+        //aria-hidden={!open}
       >
         <div className="flex h-dvh gap-2 border-r border-r-black/10 bg-neutral-50/30 dark:border-r-white/10 dark:bg-black/30 backdrop-blur shadow-xl">
           <nav className="flex h-full flex-col items-stretch w-full gap-1 p-3 sm:p-4">
@@ -50,18 +82,17 @@ function SideNav({open, onClose}: SideNavProps) {
             <div className="my-2 h-px bg-black/35 dark:bg-white/15" />
 
             {/* Chats */}
-            <div className="flex items-center gap-2 rounded-md px-3 py-2 text-sm text-left opacity-65">
-              Chats
-            </div>
+            <button onClick={createChat} className="flex items-center gap-2 rounded-md px-3 py-2 text-sm text-left hover:bg-black/5 dark:hover:bg-white/10">
+              NEW CHAT
+            </button>
+
             <section className="flex-1 overflow-y-auto rounded-md scrollbar-hide">
               <ul className="space-y-1 pr-1">
-                {Array.from({ length: 25 }, (_, i) => i + 1).map((num) => (
-                  <li key={num}>
-                    <button
-                      data-chat-id={num}
-                      className="w-full truncate rounded-md px-3 py-2 text-left text-sm hover:bg-black/5 dark:hover:bg:white/10"
+                {chatList.map(chat => (
+                  <li key={chat._id}>
+                    <button className="w-full truncate rounded-md px-3 py-2 text-left text-sm hover:bg-black/5 dark:hover:bg-white/10"
                     >
-                      Chat {num}
+                      {chat.title}
                     </button>
                   </li>
                 ))}
@@ -172,7 +203,7 @@ export default function HomeMock() {
         body: JSON.stringify({ message: userInput}),
       });
 
-      if (!res.ok) throw new Error('HTTP ${res.status}');
+      if (!res.ok) throw new Error('HTTP ${res.status}'); 
       const data = await res.json();
       console.log(data);
       // 3) append assistant response

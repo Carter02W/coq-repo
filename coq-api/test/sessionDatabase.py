@@ -21,6 +21,12 @@ class SessionDatabase:
     def delete_all_sessions(self):
         self.sessionsColl.delete_many({})
 
+    def find_sessions(self):
+        sessionsArray = []
+        for sessions in self.sessionsColl.find():
+            sessionsArray.append(sessions)
+        return sessionsArray
+
 
 
 

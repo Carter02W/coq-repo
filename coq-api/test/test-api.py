@@ -1,3 +1,6 @@
+# notes: 
+## should there be a saved array of chats/sessions that is just updated when needed instead of listChats and createChats makeing a new list each time? 
+
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
 from flask_cors import CORS
@@ -12,15 +15,8 @@ app = Flask(__name__)
 CORS(app) #allow requests from my Next.js dev server
 
 sessionDB = SessionDatabase()
-#sessionDB.delete_all_sessions()
-
-# creating session on startup
-sessionDB.create_session()
-
-
 messageDB = MessageDatabase(session_db=sessionDB)
 
-#messageDB.delete_all_messages()
 
 if sessionDB.session_id:
     print("session_id =" + sessionDB.session_id)
@@ -89,11 +85,33 @@ def chat():
 
     messageDB.add_message("user", user_input) # adds the users input to the collection
     messageDB.add_message("assistant", reply) # adds the response to the collection
-
-    # db.chatsColl.insert_one({"role": "user", "content": user_input}) 
-    # db.chatsColl.insert_one({"role": "assistant", "content": reply}) 
     
     return jsonify({"reply": reply})
+
+
+
+'''populates a list of chats''' # this could be where I update the title if there are messages associated with the session? 
+@app.route("/listChats", methods=["GET"])
+def listChats():
+    sessionsArray = []
+    for sessions in sessionDB.find_sessions():
+        sessions["_id"] = str(sessions["_id"])
+        sessionsArray.append(sessions)
+
+
+    return jsonify(sessionsArray)
+
+
+""" this function will create a new session and then return a list of sessions and their Ids"""
+@app.route("/createChat", methods=["GET"])
+def createChat():
+    sessionDB.create_session() 
+    sessionsArray = listChats()
+
+    return sessionsArray
+
+
+
 
 
 @app.route("/", methods=["GET"])
