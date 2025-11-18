@@ -16,6 +16,7 @@ type ChatList = {
 
 function SideNav({open, onClose}: SideNavProps) {
   const [chatList, setChatList] = useState<ChatList[]>([]);
+  const [selectId, setSelectedId] = useState<string | null>(null);
 
   // populating list of chats everytime the sideNav renders
   useEffect(() => {
@@ -39,6 +40,12 @@ function SideNav({open, onClose}: SideNavProps) {
     const data = await createChatFunc.json();
     setChatList(data);
 
+  }
+
+  async function handleChatClicked(id: string) {
+    setSelectedId(id);
+    // this could call a function to update messages screen
+    console.log("you clicked on a new chat " + id)
   }
 
   return (
@@ -82,7 +89,10 @@ function SideNav({open, onClose}: SideNavProps) {
             <div className="my-2 h-px bg-black/35 dark:bg-white/15" />
 
             {/* Chats */}
-            <button onClick={createChat} className="flex items-center gap-2 rounded-md px-3 py-2 text-sm text-left hover:bg-black/5 dark:hover:bg-white/10">
+            <button 
+              onClick={createChat} 
+              className="flex items-center gap-2 rounded-md px-3 py-2 text-sm text-left hover:bg-black/5 dark:hover:bg-white/10"
+            >
               NEW CHAT
             </button>
 
@@ -90,7 +100,14 @@ function SideNav({open, onClose}: SideNavProps) {
               <ul className="space-y-1 pr-1">
                 {chatList.map(chat => (
                   <li key={chat._id}>
-                    <button className="w-full truncate rounded-md px-3 py-2 text-left text-sm hover:bg-black/5 dark:hover:bg-white/10"
+                    <button 
+                      onClick={() => {handleChatClicked(chat._id)}} 
+                      className={[
+                        "w-full truncate rounded-md px-3 py-2 text-left text-sm",
+                        selectId === chat._id
+                          ? "bg-black/10"
+                          : "hover:bg-black/5"
+                      ].join(" ")}
                     >
                       {chat.title}
                     </button>
@@ -208,6 +225,7 @@ export default function HomeMock() {
       console.log(data);
       // 3) append assistant response
       setMessages(prev => [...prev, { role: "assistant", content: data.reply }]);
+      
     
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);

@@ -63,6 +63,7 @@ def chatList():
     print(docsArray)
     return docsArray
 
+
 '''
 main chat method gets called when user sends input for page.tsx and posts json reply to be added to a <ChatBubble>
 '''
@@ -85,9 +86,47 @@ def chat():
 
     messageDB.add_message("user", user_input) # adds the users input to the collection
     messageDB.add_message("assistant", reply) # adds the response to the collection
+
+    currSession = sessionDB.session_id
+
+    session_doc = sessionDB.sessionsColl.find_one(
+    {"session_id": currSession},
+    {"title": 1}  # projection: only need the title
+)
+    
+    print("\n \n" + str(sessionDB.find_sessions()) + "\nCurrent Session = " + currSession + "\nUser Input = " + user_input +"\n")
+
+    if session_doc and session_doc.get("title") == "New chat":
+        newTitle = chatTitle(user_input)
+        sessionDB.update_session(currSession, newTitle)
+        print("\nupdate triggered")
+
+
     
     return jsonify({"reply": reply})
 
+
+
+'''this will be called to summarize the first four messages to create a title '''
+def chatTitle(user_message):
+    resp = client.chat.completions.create(
+        model="gpt-5-nano",
+        messages=[
+            {
+                "role": "system",
+                "content": "Summarize this into a concise title in no more than 5 words."
+            },
+            {
+                "role": "user",
+                "content": user_message
+            }
+        ]
+    )
+
+    title = str(resp.choices[0].message.content)
+    print("\n\n" + title + "\n")
+
+    return title
 
 
 '''populates a list of chats''' # this could be where I update the title if there are messages associated with the session? 
@@ -96,7 +135,7 @@ def listChats():
     sessionsArray = []
     for sessions in sessionDB.find_sessions():
         sessions["_id"] = str(sessions["_id"])
-        sessionsArray.append(sessions)
+        sessionsArray.insert(0, sessions)
 
 
     return jsonify(sessionsArray)
