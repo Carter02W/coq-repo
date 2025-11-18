@@ -10,7 +10,7 @@ type SideNavProps = {
 
 type ChatList = {
   _id: string;
-  sessionId: string;
+  session_id: string;
   title: string;
 };
 
@@ -29,6 +29,7 @@ function SideNav({open, onClose}: SideNavProps) {
 
     const data = await res.json();
     setChatList(data);
+    console.log(chatList)
   }
 
   // createChat() triggered when new chat button is clicked, fetches and creates an array(ChatList) of all current saved sessions after a new session has been created. ps should there be a main list of sessions in test-api and these functions just updated it? 
@@ -99,12 +100,12 @@ function SideNav({open, onClose}: SideNavProps) {
             <section className="flex-1 overflow-y-auto rounded-md scrollbar-hide">
               <ul className="space-y-1 pr-1">
                 {chatList.map(chat => (
-                  <li key={chat._id}>
+                  <li key={chat.session_id}>
                     <button 
-                      onClick={() => {handleChatClicked(chat._id)}} 
+                      onClick={() => {handleChatClicked(chat.session_id)}} 
                       className={[
                         "w-full truncate rounded-md px-3 py-2 text-left text-sm",
-                        selectId === chat._id
+                        selectId === chat.session_id
                           ? "bg-black/10"
                           : "hover:bg-black/5"
                       ].join(" ")}
