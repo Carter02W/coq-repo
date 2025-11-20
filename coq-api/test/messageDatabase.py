@@ -14,8 +14,10 @@ class MessageDatabase:
             chatsArray.append(chats)
             
 
-    def add_message(self, role, content): # finish later
-        sid = self.session_db.session_id
+    def add_message(self, role, content, currSession): # finish later
+        sid = currSession
+        print("add_message: " + str(sid))
+
         if not sid:
             raise RuntimeError("No active session_id. Did you call create_session()?")  # helpful guard
     

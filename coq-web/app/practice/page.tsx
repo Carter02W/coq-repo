@@ -1,11 +1,13 @@
 "use client";
 
+import { title } from "process";
 import { useState, useEffect } from "react";
 
 
 type SideNavProps = {
   open: boolean;
   onClose: () => void;
+  onSelectSession: (id: string) => void;
 };
 
 type ChatList = {
@@ -14,38 +16,51 @@ type ChatList = {
   title: string;
 };
 
-function SideNav({open, onClose}: SideNavProps) {
+function SideNav({open, onClose, onSelectSession}: SideNavProps) {
   const [chatList, setChatList] = useState<ChatList[]>([]);
   const [selectId, setSelectedId] = useState<string | null>(null);
 
-  // populating list of chats everytime the sideNav renders
+
+   // populating list of chats everytime the sideNav renders
   useEffect(() => {
-    listChats();
+
+    // listChats() fetches and creates an array(ChatList) of all current saved sessions 
+    const listChats = async () => {
+      const res = await fetch("http://127.0.0.1:8080/listChats");
+
+      const data = await res.json();
+      setChatList(data);
+      console.log("listChats() data = ", data)
+    }
+
+      listChats();
   }, []);
 
-  // listChats() fetches and creates an array(ChatList) of all current saved sessions 
-  async function listChats() {
-    const res = await fetch("http://127.0.0.1:8080/listChats");
-
-    const data = await res.json();
-    setChatList(data);
-    console.log(chatList)
-  }
-
   // createChat() triggered when new chat button is clicked, fetches and creates an array(ChatList) of all current saved sessions after a new session has been created. ps should there be a main list of sessions in test-api and these functions just updated it? 
-  async function createChat() {
+  const createChat = async () => {
     const createChatFunc = await fetch("http://127.0.0.1:8080/createChat", {
       method: "GET"
     });
 
     const data = await createChatFunc.json();
+    console.log(data)
     setChatList(data);
+    console.log("chat created, current chatList = " + data)
+
+    if (data.length > 0) {  // calling handleChatClicked on new chats so that they are selected on creation and give home mock the current session_id
+      const newChat = data[0];
+      if (newChat.title === "New chat") {
+        const sessionId = newChat.session_id;
+        handleChatClicked(sessionId);
+      }
+    }
 
   }
 
-  async function handleChatClicked(id: string) {
+  function handleChatClicked(id: string) {
     setSelectedId(id);
-    // this could call a function to update messages screen
+    onSelectSession(id);
+        // this could call a function to update messages screen
     console.log("you clicked on a new chat " + id)
   }
 
@@ -200,40 +215,82 @@ function BottomBar({ onSend, className = "" }: BottomBarProps) {
   );
 }
 
+type ChatMessage = {
+  role: "user" | "assistant";
+  content: string;
+};
+
 export default function HomeMock() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [currSessionId, setCurrSessionId] = useState<string | null>(null);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
 
-  const [messages, setMessages] = useState<Array<{ role: "user" | "assistant"; content: string }>>([  // right now this isnt updating with the db. if a chat is deleted it isnt updated here
-    // { role: "assistant", content: "Hi Carter! I’m your study buddy. Ask me anything about your course or notes." },
-    // { role: "user", content: "Summarize Chapter 3 for me." },
-    // { role: "assistant", content: "Here’s a concise overview of Chapter 3… (placeholder text)." },
-  ]);
+  //this will create a message list based off of the current session (ex. call on a function in test-api to pass a list of messages associated with currSessionId)
+  useEffect(() => {
+    if (!currSessionId) return;
+
+    const findMessages = async () => {
+      const res = await fetch("http://127.0.0.1:8080/listMessages", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          sessionId: currSessionId
+        }),
+      });
+
+      const data = (await res.json()) as ChatMessage[];
+      console.log("findMessages: ", data);
+
+      setMessages(
+        data.map((obj) => ({
+          role: obj.role,
+          content: obj.content,
+        }))
+      );
+    }
+
+    findMessages();
+  }, [currSessionId]);
+  
+  useEffect(() => {
+    console.log("homeMock messages changed: ", messages);
+  }, [messages]);
 
   const handleSend = async(userInput: string) => {
+
     // 1) show the user's message immediately
-    setMessages(prev => [...prev, { role: "user", content: userInput }]);
+    setMessages(prev => [...prev, { role: "user", content: userInput}]);
+    console.log("handleSend current messages = ", messages)
 
     try {
       // 2) call python backend
       const res = await fetch("http://127.0.0.1:8080/chat", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ message: userInput}),
+        body: JSON.stringify({ 
+          message: userInput,
+          sessionId: currSessionId
+        }),
       });
 
       if (!res.ok) throw new Error('HTTP ${res.status}'); 
       const data = await res.json();
       console.log(data);
       // 3) append assistant response
-      setMessages(prev => [...prev, { role: "assistant", content: data.reply }]);
+      setMessages(prev => [...prev, { role: "assistant", content: data.reply}]);
       
     
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
-      setMessages(prev => [...prev, {role: "assistant", content: `Sorry, request failed: ${msg}` },
-      ]);
+      setMessages(prev => [...prev, {role: "assistant", content: `Sorry, request failed: ${msg}`}]);
     }
   };
+
+
+  console.log("current homeMoke sessionId = " + currSessionId);
+  console.log("this is the current message list: " + JSON.stringify(messages))
+
+
     return (
   <div className="relative min-h-dvh bg-[radial-gradient(ellipse_at_top,rgba(120,119,198,0.08),transparent_45%),radial-gradient(ellipse_at_bottom,rgba(30,30,30,0.06),transparent_55%)] text-neutral-900 antialiased dark:text-neutral-100">
       {/* sidebar toggle */}
@@ -246,7 +303,7 @@ export default function HomeMock() {
         |||
       </button>
 
-    <SideNav open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+    <SideNav open={sidebarOpen} onClose={() => setSidebarOpen(false)} onSelectSession={setCurrSessionId}/>
 
     {/* Main content (kept centered) */}
     <div className="lg:pl-64">

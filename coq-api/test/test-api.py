@@ -45,11 +45,11 @@ print("api key found?", bool(apiKey)) # quick check that api key is found
 client = OpenAI(api_key= apiKey)
 
 '''
-makes a list of the first ten documents in the chatsColl collection
+makes a list of the first ten documents in the chatsColl collection used from api memory
 '''
-def chatList():
+def messageMemoryList(sessId): #working properly (next add a more advanced memory method)
     docsArray = []
-    for i, docs in enumerate(messageDB.messagesColl.find({"sessionId": sessionDB.session_id}, {"_id": 0}).sort("_id", -1)):
+    for i, docs in enumerate(messageDB.messagesColl.find({"sessionId": sessId}, {"_id": 0, "sessionId": 0, "created_at": 0}).sort("_id", -1)):
         if i >= 10:
             break
 
@@ -60,8 +60,30 @@ def chatList():
 
         docsArray.append(docs)
 
-    print(docsArray)
+    print("messageMemory: " + str(docsArray))
     return docsArray
+
+
+'''this function creates a list of messages associated with the chat sessionId given'''
+@app.route("/listMessages", methods=["POST"])
+def listMessages():
+    data = request.get_json(force=True)
+    print("\nlistMesage data: " + str(data))
+
+    currSessionId = data.get("sessionId", "").strip()
+
+    print("listMessage currSessionId: " + str(currSessionId))
+
+    messagesArray= []
+    for i, message in enumerate(messageDB.messagesColl.find({"sessionId": currSessionId}, {"_id": 0, "created_at": 0}) ): #.sort("_id", -1)
+        if i < 10:
+            messagesArray.append(message)
+
+    print("listMessages messagesArray:" + str(messagesArray) + "\n")
+
+    return messagesArray
+
+
 
 
 '''
@@ -71,6 +93,8 @@ main chat method gets called when user sends input for page.tsx and posts json r
 def chat():
     data = request.get_json(force=True)
     user_input = data.get("message", "").strip()
+    currSession = data.get("sessionId", "").strip() 
+    print("chat recieved current session: " + str(currSession) + "\n")
 
     if not user_input:
         return jsonify({"reply": "I didn't receive any text."}), 400  
@@ -78,23 +102,25 @@ def chat():
     #call openAI
     resp = client.chat.completions.create(
         model="gpt-5-nano",
-        messages= [{"role": "system", "content": "You are a helpful assistant."}] + chatList() +
+        messages= [{"role": "system", "content": "You are a helpful assistant."}] + messageMemoryList(currSession) +
             [{"role": "user", "content": user_input}]
     )
 
     reply = resp.choices[0].message.content
 
-    messageDB.add_message("user", user_input) # adds the users input to the collection
-    messageDB.add_message("assistant", reply) # adds the response to the collection
+    messageDB.add_message("user", user_input, currSession) # adds the users input to the collection
+    messageDB.add_message("assistant", reply, currSession) # adds the response to the collection
 
-    currSession = sessionDB.session_id
 
-    session_doc = sessionDB.sessionsColl.find_one(
-    {"session_id": currSession},
-    {"title": 1}  # projection: only need the title
-)
+  
     
-    print("\n \n" + str(sessionDB.find_sessions()) + "\nCurrent Session = " + currSession + "\nUser Input = " + user_input +"\n")
+    print("\n \n" + str(sessionDB.find_sessions()) + "\nCurrent Session = " + str(currSession) + "\nUser Input = " + user_input +"\n")
+
+    #renaming 
+    session_doc = sessionDB.sessionsColl.find_one(
+        {"session_id": currSession},
+        {"title": 1}  # projection: only need the title
+    )
 
     if session_doc and session_doc.get("title") == "New chat":
         newTitle = chatTitle(user_input)
@@ -138,14 +164,15 @@ def listChats():
         sessionsArray.insert(0, sessions)
 
 
-    return jsonify(sessionsArray)
+    return sessionsArray
 
 
 """ this function will create a new session and then return a list of sessions and their Ids"""
 @app.route("/createChat", methods=["GET"])
 def createChat():
     sessionDB.create_session() 
-    sessionsArray = listChats()
+    sessionsArray = jsonify(listChats())
+    print(sessionsArray)
 
     return sessionsArray
 
