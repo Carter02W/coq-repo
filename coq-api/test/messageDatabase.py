@@ -1,12 +1,29 @@
-from pymongo import MongoClient
+from pymongo.mongo_client import MongoClient
+from pymongo.server_api import ServerApi
+from pathlib import Path
+from dotenv import load_dotenv
 from datetime import datetime
+import os
+
+env_path = Path(__file__).resolve()
+for parent in env_path.parents:
+    candidate = parent/".env.local"
+
+    if candidate.exists():
+        load_dotenv(dotenv_path=candidate)
+        print("messageDatabase loaded env path", candidate)
+        break
+
+dbUri = os.getenv("MONGODB_ATLAS_CONNECTION")
+print("messageDatabase connection found?", bool(dbUri))
+
 
 class MessageDatabase:
-    def __init__(self, session_db, uri="mongodb://localhost:27017/", db_name="coqDB"):
-        self.client = MongoClient(uri)
-        self.db = self.client[db_name]
+    def __init__(self):
+        self.client = MongoClient(dbUri, server_api=ServerApi('1'))
+        self.db = self.client["coqDB"]
         self.messagesColl = self.db["messages"] # new messages db to replace chats
-        self.session_db = session_db
+        #self.session_db = session_db
 
     def find_docs(self):
         chatsArray = []

@@ -15,7 +15,7 @@ app = Flask(__name__)
 CORS(app) #allow requests from my Next.js dev server
 
 sessionDB = SessionDatabase()
-messageDB = MessageDatabase(session_db=sessionDB)
+messageDB = MessageDatabase()
 
 
 if sessionDB.session_id:
@@ -102,7 +102,7 @@ def chat():
     #call openAI
     resp = client.chat.completions.create(
         model="gpt-5-nano",
-        messages= [{"role": "system", "content": "You are a helpful assistant."}] + messageMemoryList(currSession) +
+        messages= [{"role": "system", "content": "You are concise and to the point."}] + messageMemoryList(currSession) +
             [{"role": "user", "content": user_input}]
     )
 
