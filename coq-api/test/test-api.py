@@ -133,7 +133,7 @@ def chat():
 
 
 
-'''this will be called to summarize the first four messages to create a title '''
+'''this will be called to summarize first message to create a title '''
 def chatTitle(user_message):
     resp = client.chat.completions.create(
         model="gpt-5-nano",

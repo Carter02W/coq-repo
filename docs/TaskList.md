@@ -1,7 +1,4 @@
 
-# sending message without creating chat does not create a session.
-
-# useEffect when title changes update sideNav right away
 
 # login page
 

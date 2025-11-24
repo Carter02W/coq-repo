@@ -6,7 +6,8 @@ import { useState, useEffect } from "react";
 type SideNavProps = {
   open: boolean;
   onClose: () => void;
-  onSelectSession: (id: string) => void;
+  onSelectSession: (id: string, isNewChat: boolean) => void;
+  refreshKey: number;
 };
 
 type ChatList = {
@@ -15,7 +16,7 @@ type ChatList = {
   title: string;
 };
 
-function SideNav({open, onClose, onSelectSession}: SideNavProps) {
+function SideNav({open, onClose, onSelectSession, refreshKey}: SideNavProps) {
   const [chatList, setChatList] = useState<ChatList[]>([]);
   const [selectId, setSelectedId] = useState<string | null>(null);
 
@@ -33,7 +34,7 @@ function SideNav({open, onClose, onSelectSession}: SideNavProps) {
     }
 
       listChats();
-  }, []);
+  }, [refreshKey]);
 
   // createChat() triggered when new chat button is clicked, fetches and creates an array(ChatList) of all current saved sessions after a new session has been created. ps should there be a main list of sessions in test-api and these functions just updated it? 
   const createChat = async () => {
@@ -42,25 +43,25 @@ function SideNav({open, onClose, onSelectSession}: SideNavProps) {
     });
 
     const data = await createChatFunc.json();
-    console.log(data)
+    console.log(data);
     setChatList(data);
-    console.log("chat created, current chatList = " + data)
 
     if (data.length > 0) {  // calling handleChatClicked on new chats so that they are selected on creation and give home mock the current session_id
       const newChat = data[0];
       if (newChat.title === "New chat") {
         const sessionId = newChat.session_id;
-        handleChatClicked(sessionId);
+        const title = newChat.title;
+        handleChatClicked(sessionId, title);
       }
     }
 
   }
 
-  function handleChatClicked(id: string) {
+  function handleChatClicked(id: string, title: string) {
     setSelectedId(id);
-    onSelectSession(id);
-        // this could call a function to update messages screen
-    console.log("you clicked on a new chat " + id)
+    const isNewChat = title === "New chat";
+    onSelectSession(id, isNewChat);
+    console.log("you clicked on a new chat: ", id, " | isNewChat: ", isNewChat)
   }
 
   return (
@@ -116,7 +117,7 @@ function SideNav({open, onClose, onSelectSession}: SideNavProps) {
                 {chatList.map(chat => (
                   <li key={chat.session_id}>
                     <button 
-                      onClick={() => {handleChatClicked(chat.session_id)}} 
+                      onClick={() => {handleChatClicked(chat.session_id, chat.title)}} 
                       className={[
                         "w-full truncate rounded-md px-3 py-2 text-left text-sm",
                         selectId === chat.session_id
@@ -196,6 +197,7 @@ function BottomBar({ onSend, className = "" }: BottomBarProps) {
       <div className="w-full max-w-3xl rounded-full border border-black/5 bg-white/80 shadow-2xl backdrop-blur supports-[backdrop-filter]:bg-white/60 dark:border-white/10 dark:bg-neutral-900/60">
         <form onSubmit={handleSubmit} className="flex items-center gap-2 px-3 py-2 sm:px-4 sm:py-2.5">
           <input
+            id="bottombarFormInput"
             placeholder="Send a message…"
             value={value}
             onChange={(e) => setValue(e.target.value)}
@@ -223,22 +225,28 @@ export default function HomeMock() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [currSessionId, setCurrSessionId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [isNewChat, setIsNewChat] = useState(false);
+  const [sideNavRefreshKey, setSideNavRefreshKey] = useState(0);
+
+  const showEmptyState = (isNewChat && messages.length === 0) || (!currSessionId && messages.length === 0);
 
   //this will create a message list based off of the current session (ex. call on a function in test-api to pass a list of messages associated with currSessionId)
   useEffect(() => {
     if (!currSessionId) return;
+    if (messages.length > 0) return;
+
+    console.log("currSessionId useEffect: currSessionId = ", currSessionId)
 
     const findMessages = async () => {
       const res = await fetch("http://127.0.0.1:8080/listMessages", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
-          sessionId: currSessionId
+          sessionId: currSessionId // this is the issue I think
         }),
       });
 
       const data = (await res.json()) as ChatMessage[];
-      console.log("findMessages: ", data);
 
       setMessages(
         data.map((obj) => ({
@@ -249,17 +257,43 @@ export default function HomeMock() {
     }
 
     findMessages();
-  }, [currSessionId]);
+  }, [currSessionId, messages.length]);
+
   
-  useEffect(() => {
-    console.log("homeMock messages changed: ", messages);
-  }, [messages]);
 
   const handleSend = async(userInput: string) => {
 
+    let sessionIdToUse = currSessionId;
+
+    if (!sessionIdToUse) {
+
+        const createChatFunc = await fetch("http://127.0.0.1:8080/createChat", {
+        method: "GET"
+      });
+
+      const data = await createChatFunc.json();
+
+      if (Array.isArray(data) && data.length > 0) {  // calling handleChatClicked on new chats so that they are selected on creation and give home mock the current session_id
+        const newChat = data[0];
+        if (newChat.title === "New chat") {
+          sessionIdToUse = newChat.session_id;
+          setCurrSessionId(sessionIdToUse)
+          setIsNewChat(true);
+          console.log("hadleSend: setting currSessionID = ", sessionIdToUse)
+        };
+      };
+    };
+
+    if (!sessionIdToUse) {
+      console.error("No sessionId available even after createChat");
+      return;
+    }
+
+    // bool var that is true if the current message being sent to api is the first message of a new chat
+    const isFirstMessageInSession = isNewChat && messages.length === 0;
+
     // 1) show the user's message immediately
     setMessages(prev => [...prev, { role: "user", content: userInput}]);
-    console.log("handleSend current messages = ", messages)
 
     try {
       // 2) call python backend
@@ -268,15 +302,21 @@ export default function HomeMock() {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ 
           message: userInput,
-          sessionId: currSessionId
+          sessionId: sessionIdToUse
         }),
       });
 
       if (!res.ok) throw new Error('HTTP ${res.status}'); 
       const data = await res.json();
-      console.log(data);
       // 3) append assistant response
       setMessages(prev => [...prev, { role: "assistant", content: data.reply}]);
+
+      if (isFirstMessageInSession) {
+        // tell SideNav to refetch / get updated title
+        setSideNavRefreshKey(k => k + 1);
+        // optional: no longer treat it as a “new chat” after first message
+        setIsNewChat(false);
+      }
       
     
     } catch (err: unknown) {
@@ -288,6 +328,13 @@ export default function HomeMock() {
 
   console.log("current homeMoke sessionId = " + currSessionId);
   console.log("this is the current message list: " + JSON.stringify(messages))
+
+  // this is called when a chat in the nav bar is selected it clears messages list so that findMessages() will get triggered and sets current session id to the sessionId of the chat.
+  const handleSelectChat = (sessionId: string, isNewChatFlag: boolean) => {
+    setMessages([]);
+    setCurrSessionId(sessionId);
+    setIsNewChat(isNewChatFlag);
+  };
 
 
     return (
@@ -302,12 +349,17 @@ export default function HomeMock() {
         |||
       </button>
 
-    <SideNav open={sidebarOpen} onClose={() => setSidebarOpen(false)} onSelectSession={setCurrSessionId}/>
+    <SideNav 
+      open={sidebarOpen} 
+      onClose={() => setSidebarOpen(false)} 
+      onSelectSession={handleSelectChat} 
+      refreshKey={sideNavRefreshKey}
+    />
 
     {/* Main content (kept centered) */}
     <div className="lg:pl-64">
       <div className="mx-auto w-full max-w-3xl flex flex-col gap-4 px-4 pb-32 pt-28 sm:gap-6 sm:pb-36">
-        {messages.length === 0 ? (
+        {showEmptyState ? (
           <div className="grid place-items-center py-28 text-center">
             <h1 className="mb-2 text-2xl font-semibold sm:text-3xl">What are we studying today?</h1>
             <p className="max-w-xl text-balance text-sm opacity-70">
