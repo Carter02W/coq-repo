@@ -338,48 +338,48 @@ export default function HomeMock() {
 
 
     return (
-  <div className="relative min-h-dvh bg-[radial-gradient(ellipse_at_top,rgba(120,119,198,0.08),transparent_45%),radial-gradient(ellipse_at_bottom,rgba(30,30,30,0.06),transparent_55%)] text-neutral-900 antialiased dark:text-neutral-100">
-      {/* sidebar toggle */}
-      <button onClick={() => setSidebarOpen(true)}
-        className="fixed left-3 top-3 z-[60] rounded-lg px-3 py-2 text-sm shadow ring-1 ring-black/10 backdrop-blur bg-white/70 dark:bg-neutral-900/70 dark:ring-white/10 lg:hidden"
-        aria-label="Open sidebar"
-        aria-expanded={sidebarOpen}
-        aria-controls="app-sidenav"
-        >
-        |||
-      </button>
+      <div className="relative min-h-dvh bg-[radial-gradient(ellipse_at_top,rgba(120,119,198,0.08),transparent_45%),radial-gradient(ellipse_at_bottom,rgba(30,30,30,0.06),transparent_55%)] text-neutral-900 antialiased dark:text-neutral-100">
+          {/* sidebar toggle */}
+          <button onClick={() => setSidebarOpen(true)}
+            className="fixed left-3 top-3 z-[60] rounded-lg px-3 py-2 text-sm shadow ring-1 ring-black/10 backdrop-blur bg-white/70 dark:bg-neutral-900/70 dark:ring-white/10 lg:hidden"
+            aria-label="Open sidebar"
+            aria-expanded={sidebarOpen}
+            aria-controls="app-sidenav"
+            >
+            |||
+          </button>
 
-    <SideNav 
-      open={sidebarOpen} 
-      onClose={() => setSidebarOpen(false)} 
-      onSelectSession={handleSelectChat} 
-      refreshKey={sideNavRefreshKey}
-    />
+        <SideNav 
+          open={sidebarOpen} 
+          onClose={() => setSidebarOpen(false)} 
+          onSelectSession={handleSelectChat} 
+          refreshKey={sideNavRefreshKey}
+        />
 
-    {/* Main content (kept centered) */}
-    <div className="lg:pl-64">
-      <div className="mx-auto w-full max-w-3xl flex flex-col gap-4 px-4 pb-32 pt-28 sm:gap-6 sm:pb-36">
-        {showEmptyState ? (
-          <div className="grid place-items-center py-28 text-center">
-            <h1 className="mb-2 text-2xl font-semibold sm:text-3xl">What are we studying today?</h1>
-            <p className="max-w-xl text-balance text-sm opacity-70">
-              Type a prompt below, or pick a tool from the header (Analysis, Flashcards, Notes, Q&amp;A).
-            </p>
+        {/* Main content (kept centered) */}
+        <div className="lg:pl-64">
+          <div className="mx-auto w-full max-w-3xl flex flex-col gap-4 px-4 pb-32 pt-28 sm:gap-6 sm:pb-36">
+            {showEmptyState ? (
+              <div className="grid place-items-center py-28 text-center">
+                <h1 className="mb-2 text-2xl font-semibold sm:text-3xl">What are we studying today?</h1>
+                <p className="max-w-xl text-balance text-sm opacity-70">
+                  Type a prompt below, or pick a tool from the header (Analysis, Flashcards, Notes, Q&amp;A).
+                </p>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-3">
+                {messages.map((m, i) => (
+                  <ChatBubble key={i} role={m.role}>
+                    {m.content}
+                  </ChatBubble>
+                ))}
+              </div>
+            )}
           </div>
-        ) : (
-          <div className="flex flex-col gap-3">
-            {messages.map((m, i) => (
-              <ChatBubble key={i} role={m.role}>
-                {m.content}
-              </ChatBubble>
-            ))}
-          </div>
-        )}
+
+          {/* <ConversationNav />  ✅ add this outside main content */}
+          <BottomBar onSend={handleSend} className="left-0 right-0 lg:left-64"/>
+        </div>
       </div>
-
-      {/* <ConversationNav />  ✅ add this outside main content */}
-      <BottomBar onSend={handleSend} className="left-0 right-0 lg:left-64"/>
-    </div>
-  </div>
 );
 }

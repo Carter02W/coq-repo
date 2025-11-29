@@ -9,6 +9,19 @@
   display: none;
 }
 
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+  background-color: transparent !important;
+  box-shadow: 0 0 0px 1000px transparent inset !important;
+  -webkit-text-fill-color: inherit !important;
+  transition: background-color 9999s ease-out 0s; 
+  -webkit-text-fill-color: var(--foreground) !important;
+  transition: background-color 9999s ease-out 0s !important;
+  box-shadow: 0 0 0px 1000px transparent inset !important;
+}
+
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -19,7 +32,7 @@
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #0a0a0af8;
-    --foreground: #ededed;
+    --foreground: #b4c0d3;
   }
 }
 
