@@ -24,3 +24,15 @@ class UserDatabase:
         self.db = self.client["coqDB"]
         self.usersColl = self.db["users"]
         
+
+    def create_user(self, email: str, password_hash: str, role: str = "user"):
+        doc = {
+            "email": email,
+            "password_hash": password_hash, 
+            "role": role,
+            "created_at": datetime.now()
+        }
+
+        self.usersColl.insert_one(doc)
+
+    
