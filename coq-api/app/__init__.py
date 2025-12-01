@@ -1,6 +1,6 @@
 # create app, wiring, OpenAI, DBs, CORS
 
-from flask import Flask, jsonify
+from flask import Flask
 from flask_cors import CORS
 from dotenv import load_dotenv 
 from pathlib import Path
@@ -30,6 +30,7 @@ def create_app() -> Flask:
 
     _load_env()
 
+    # api connection
     api_key = os.getenv("OPENAI_API_KEY")
     print("api key found?", bool(api_key))
     client = OpenAI(api_key=api_key)
