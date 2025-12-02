@@ -2,13 +2,13 @@
 
 import { Roboto } from "next/font/google";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 const roboto = Roboto({
   subsets: ["latin"],
 });
 
 type LoginWindowProps = {
-  password: string;
   showPassword: boolean;
   onPasswordChange: (value: string) => void;
   onForgotPassword: () => void;
@@ -16,7 +16,68 @@ type LoginWindowProps = {
   onGoToSignUp: () => void;
 };
 
-function LogInWindow({ password, showPassword, onPasswordChange, onForgotPassword, onToggleShowPassword, onGoToSignUp,}: LoginWindowProps) {
+type FieldType = "password" | "email";
+
+function LogInWindow({ showPassword, onForgotPassword, onToggleShowPassword, onGoToSignUp,}: LoginWindowProps) {
+  const router =useRouter();
+  const [email, setEmail] = useState("");
+  const [emailError, setEmailError] = useState(false);
+  const [emailErrorString, setEmailErrorString] = useState("");
+  const [password, setPassword] = useState("");
+  const [passwordError, setPasswordError] = useState(false);
+  const [passwordErrorString, setPasswordErrorString] = useState("");
+
+  
+  function fail(type: FieldType, msg: string): boolean {
+    if (type === "password") {
+      setPasswordError(true);
+      setPasswordErrorString(msg);
+    }
+    if (type === "email") {
+      setEmailError(true);
+      setEmailErrorString(msg);
+    }
+    return false;
+  }
+
+  // email validation
+  function validEmail(em: string): boolean {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) {
+      setEmailErrorString("invalid email format");
+      setEmailError(true);
+      return false;
+    }
+    
+    if (emailError) setEmailError(false);
+    return true;
+  }
+
+  // password validation
+  function validPassword(p: string): boolean {
+    if (p.length < 8) return fail("password", "invalid password: must be longer than 8 characters");
+    if (!/[A-Z]/.test(p)) return fail("password", "invalid password: must have at least one upper case character");
+    if (!/[a-z]/.test(p)) return fail("password", "invalid password: must have at least one lower case character");
+    if (!/[0-9]/.test(p)) return fail("password","invalid password: must have at least one number")
+    if (!/[!@#$%^&*(),.?":{}|<>]/.test(p)) return fail("password", "invalid password: must have at least one special character");
+
+    if (passwordError) setPasswordError(false);
+    return true;
+  } 
+
+
+  const handleSubmit = async ()  => {
+
+    console.log("email: ", email);
+    console.log("password: ", password);
+
+    const emailSuccess = validEmail(email);
+    const passSuccess = validPassword(password);
+
+    if (!emailSuccess || !passSuccess) return;
+
+    router.push("/chat");
+  };
+  
   return (
     <div className="flex flex-col justify-center items-center gap-5">
       {/* main content window */}
@@ -32,21 +93,33 @@ function LogInWindow({ password, showPassword, onPasswordChange, onForgotPasswor
         {/* input field */}
         <div className="flex flex-col w-[40vh] gap-7">
 
-          {/* email | username */}
-          <input id="email" type="email" placeholder="Email or Username" 
-            className="outline-none  h-[4vh] px-1 border-1 border-gray-300 rounded-sm " 
-            />
+          <div className="flex flex-col">
+            {/* password error label */}
+            <label htmlFor="email" className={` ${emailError ? "flex" : "hidden"} text-sm text-red-500`}>{emailErrorString}</label>
+            {/* email */}
+            <input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={emailError ? "invalid Email" : "Email"}
+              className={[
+                "outline-none  h-[4vh] px-1 border-1 border-gray-300 rounded-sm",
+                emailError ? "border-red-500" : "border-gray-300"
+              ].join(" ")}
+              />
+          </div>
 
-          {/* holds password and show password button */}
-          <div className="flex px-1 border-1 border-gray-300 rounded-sm">
-            <input id="password" type={showPassword ? "text": "password"} placeholder="Password" value={password} onChange={(e) => onPasswordChange(e.target.value)} className="flex-1 h-[4vh] outline-none" />
-            <button
-              type="button"
-              onClick={onToggleShowPassword}
-              className="text-xs text-blue-400"
-            >
-              {showPassword ? "hide" : "show"}
-            </button>
+          <div className="flex flex-col">
+          {/* password error label */}
+            <label htmlFor="password" className={` ${passwordError ? "flex" : "hidden"} text-sm text-red-500`}>{passwordErrorString} </label>
+            {/* holds password and show password button */}
+            <div className={`flex px-1 border-1 rounded-sm ${passwordError ? "border-red-500" : "border-gray-300"}`}>
+              <input id="password" type={showPassword ? "text": "password"} placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} 
+                className="flex-1 h-[4vh] outline-none" />
+              <button
+                type="button"
+                onClick={onToggleShowPassword}
+                className="text-xs text-blue-400"
+              >
+                {showPassword ? "hide" : "show"}
+              </button>
+            </div>
           </div>
 
           {/* forgot password */}
@@ -59,7 +132,7 @@ function LogInWindow({ password, showPassword, onPasswordChange, onForgotPasswor
 
         {/* button field */}
         <div className="flex flex-col justify-center w-[40vh] h-[4vh] gap-2 shadow-sm shadow-gray-500 rounded bg-gradient-to-br from-indigo-500 to-violet-500">
-          <button>Sign in</button>
+          <button onClick={handleSubmit} >Sign in</button>
         </div>
       </div>
 
@@ -75,7 +148,6 @@ function LogInWindow({ password, showPassword, onPasswordChange, onForgotPasswor
             Sign up
         </button>
       </div>
-
     </div>
   );
 };
@@ -200,7 +272,6 @@ export default function Home() {
         />
       ) : (
         <LogInWindow
-          password={password}
           showPassword={showPassword}
           onForgotPassword={test_button}
           onPasswordChange={setPassword}

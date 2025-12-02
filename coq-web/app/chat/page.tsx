@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 
 type SideNavProps = {
@@ -17,8 +18,13 @@ type ChatList = {
 };
 
 function SideNav({open, onClose, onSelectSession, refreshKey}: SideNavProps) {
+  const router = useRouter();
   const [chatList, setChatList] = useState<ChatList[]>([]);
   const [selectId, setSelectedId] = useState<string | null>(null);
+
+  function onClickUser() {
+    router.push("/login");
+  };
 
 
    // populating list of chats everytime the sideNav renders
@@ -136,7 +142,7 @@ function SideNav({open, onClose, onSelectSession, refreshKey}: SideNavProps) {
 
             {/* Login pill */}
             <div className="mb-1 flex items-center gap-2 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-500 px-3 py-2 text-white shadow">
-              <span className="text-sm font-semibold tracking-wide">CW</span>
+              <button onClick={onClickUser} className="text-sm font-semibold tracking-wide">CW</button>
             </div>
           </nav>
         </div>

@@ -17,4 +17,13 @@ class UserDatabase:
 
         self.usersColl.insert_one(doc)
 
+    def find_user(self, email: str):
+        doc = {
+            "email": email
+        }
+        
+        user = self.usersColl.find_one(doc)
+
+        return user
+
     
