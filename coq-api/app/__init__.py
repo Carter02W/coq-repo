@@ -8,11 +8,11 @@ from openai import OpenAI
 import os
 
 from .db.messageDatabase import MessageDatabase
-from .db.sessionDatabase import SessionDatabase
+from .db.chatDatabase import ChatDatabase
 from .db.userDatabase import UserDatabase
 
 messageDB = MessageDatabase()
-sessionDB = SessionDatabase()
+chatDB = ChatDatabase()
 userDB = UserDatabase()
 client: OpenAI | None = None
 

@@ -17,14 +17,20 @@ class UserDatabase:
             "created_at": datetime.now()
         }
 
-        self.usersColl.insert_one(doc)
+        user = self.usersColl.insert_one(doc)
+        print("insert_user_result:", user)
+    
+        return user
 
 
 
 
     def find_user(self, email: str):
 
-        user = self.usersColl.find_one({"email": email})
+        user = self.usersColl.find_one(
+            {"email": email},
+            {"_id": 0, "created_at": 0, "role": 0}
+        )
 
         print("userDatabase find_user returns: ", user)
 

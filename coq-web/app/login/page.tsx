@@ -88,7 +88,6 @@ function LogInWindow({ onGoToSignUp }: LoginWindowProps) {
     });
 
     const data = await res.json();
-    console.log("result:", res);
     console.log("user found:", data);
     
 
@@ -281,8 +280,8 @@ function SignUpWindow({ onGoToLogin }: SignUpProps) {
     const phone = fields.phone.value
     const cleaned = phone.replace(/\D/g, ""); // remove all non-digets
 
-    if (cleaned.length != 10) {
-      return fail("phone", "enter a 10 diget phone number");
+    if (cleaned.length != 11) {
+      return fail("phone", "enter a 11 diget phone number");
     }
 
     clearFieldError("phone");
@@ -321,10 +320,9 @@ function SignUpWindow({ onGoToLogin }: SignUpProps) {
 
     if (!isValidName || !isValidEmail || !isValidPhone || !isValidPassword || !isValidConfPass) return;
 
-    
 
     const res = await fetch("http://127.0.0.1:8080/signup", {
-      method: "GET",
+      method: "POST",
       headers: {"content-type": "application/json" },
       body: JSON.stringify({
         name: fields.name.value,
@@ -336,7 +334,15 @@ function SignUpWindow({ onGoToLogin }: SignUpProps) {
       })
     });
 
-    router.push("/chat");
+    const data = await res.json()
+    console.log("signup data:", data)
+
+    if (!data) {
+      console.log("insert failed:", data)
+      return;
+    }
+
+   router.push("/chat");
   };
 
   return (

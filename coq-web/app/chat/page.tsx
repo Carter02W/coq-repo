@@ -7,17 +7,17 @@ import { useRouter } from "next/navigation";
 type SideNavProps = {
   open: boolean;
   onClose: () => void;
-  onSelectSession: (id: string, isNewChat: boolean) => void;
+  onSelectChat: (id: string, isNewChat: boolean) => void;
   refreshKey: number;
 };
 
 type ChatList = {
   _id: string;
-  session_id: string;
+  chat_id: string;
   title: string;
 };
 
-function SideNav({open, onClose, onSelectSession, refreshKey}: SideNavProps) {
+function SideNav({open, onClose, onSelectChat, refreshKey}: SideNavProps) {
   const router = useRouter();
   const [chatList, setChatList] = useState<ChatList[]>([]);
   const [selectId, setSelectedId] = useState<string | null>(null);
@@ -30,7 +30,7 @@ function SideNav({open, onClose, onSelectSession, refreshKey}: SideNavProps) {
    // populating list of chats everytime the sideNav renders
   useEffect(() => {
 
-    // listChats() fetches and creates an array(ChatList) of all current saved sessions 
+    // listChats() fetches and creates an array(ChatList) of all current saved chats 
     const listChats = async () => {
       const res = await fetch("http://127.0.0.1:8080/listChats");
 
@@ -42,7 +42,7 @@ function SideNav({open, onClose, onSelectSession, refreshKey}: SideNavProps) {
       listChats();
   }, [refreshKey]);
 
-  // createChat() triggered when new chat button is clicked, fetches and creates an array(ChatList) of all current saved sessions after a new session has been created. ps should there be a main list of sessions in test-api and these functions just updated it? 
+  // createChat() triggered when new chat button is clicked, fetches and creates an array(ChatList) of all current saved chats after a new chat has been created. ps should there be a main list of chats in test-api and these functions just updated it? 
   const createChat = async () => {
     const createChatFunc = await fetch("http://127.0.0.1:8080/createChat", {
       method: "GET"
@@ -52,12 +52,12 @@ function SideNav({open, onClose, onSelectSession, refreshKey}: SideNavProps) {
     console.log(data);
     setChatList(data);
 
-    if (data.length > 0) {  // calling handleChatClicked on new chats so that they are selected on creation and give home mock the current session_id
+    if (data.length > 0) {  // calling handleChatClicked on new chats so that they are selected on creation and give home mock the current chat_id
       const newChat = data[0];
       if (newChat.title === "New chat") {
-        const sessionId = newChat.session_id;
+        const chatId = newChat.chat_id;
         const title = newChat.title;
-        handleChatClicked(sessionId, title);
+        handleChatClicked(chatId, title);
       }
     }
 
@@ -66,7 +66,7 @@ function SideNav({open, onClose, onSelectSession, refreshKey}: SideNavProps) {
   function handleChatClicked(id: string, title: string) {
     setSelectedId(id);
     const isNewChat = title === "New chat";
-    onSelectSession(id, isNewChat);
+    onSelectChat(id, isNewChat);
     console.log("you clicked on a new chat: ", id, " | isNewChat: ", isNewChat)
   }
 
@@ -121,12 +121,12 @@ function SideNav({open, onClose, onSelectSession, refreshKey}: SideNavProps) {
             <section className="flex-1 overflow-y-auto rounded-md scrollbar-hide">
               <ul className="space-y-1 pr-1">
                 {chatList.map(chat => (
-                  <li key={chat.session_id}>
+                  <li key={chat.chat_id}>
                     <button 
-                      onClick={() => {handleChatClicked(chat.session_id, chat.title)}} 
+                      onClick={() => {handleChatClicked(chat.chat_id, chat.title)}} 
                       className={[
                         "w-full truncate rounded-md px-3 py-2 text-left text-sm",
-                        selectId === chat.session_id
+                        selectId === chat.chat_id
                           ? "bg-black/10"
                           : "hover:bg-black/5"
                       ].join(" ")}
@@ -229,26 +229,26 @@ type ChatMessage = {
 
 export default function HomeMock() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [currSessionId, setCurrSessionId] = useState<string | null>(null);
+  const [currchatId, setCurrchatId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isNewChat, setIsNewChat] = useState(false);
   const [sideNavRefreshKey, setSideNavRefreshKey] = useState(0);
 
-  const showEmptyState = (isNewChat && messages.length === 0) || (!currSessionId && messages.length === 0);
+  const showEmptyState = (isNewChat && messages.length === 0) || (!currchatId && messages.length === 0);
 
-  //this will create a message list based off of the current session (ex. call on a function in test-api to pass a list of messages associated with currSessionId)
+  //this will create a message list based off of the current chat (ex. call on a function in test-api to pass a list of messages associated with currchatId)
   useEffect(() => {
-    if (!currSessionId) return;
+    if (!currchatId) return;
     if (messages.length > 0) return;
 
-    console.log("currSessionId useEffect: currSessionId = ", currSessionId)
+    console.log("currchatId useEffect: currchatId = ", currchatId)
 
     const findMessages = async () => {
       const res = await fetch("http://127.0.0.1:8080/listMessages", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
-          sessionId: currSessionId // this is the issue I think
+          chat_id: currchatId // this is the issue I think
         }),
       });
 
@@ -263,15 +263,15 @@ export default function HomeMock() {
     }
 
     findMessages();
-  }, [currSessionId, messages.length]);
+  }, [currchatId, messages.length]);
 
   
 
   const handleSend = async(userInput: string) => {
 
-    let sessionIdToUse = currSessionId;
+    let chatIdToUse = currchatId;
 
-    if (!sessionIdToUse) {
+    if (!chatIdToUse) {
 
         const createChatFunc = await fetch("http://127.0.0.1:8080/createChat", {
         method: "GET"
@@ -279,24 +279,24 @@ export default function HomeMock() {
 
       const data = await createChatFunc.json();
 
-      if (Array.isArray(data) && data.length > 0) {  // calling handleChatClicked on new chats so that they are selected on creation and give home mock the current session_id
+      if (Array.isArray(data) && data.length > 0) {  // calling handleChatClicked on new chats so that they are selected on creation and give home mock the current chat_id
         const newChat = data[0];
         if (newChat.title === "New chat") {
-          sessionIdToUse = newChat.session_id;
-          setCurrSessionId(sessionIdToUse)
+          chatIdToUse = newChat.chat_id;
+          setCurrchatId(chatIdToUse)
           setIsNewChat(true);
-          console.log("hadleSend: setting currSessionID = ", sessionIdToUse)
+          console.log("hadleSend: setting currchatId = ", chatIdToUse)
         };
       };
     };
 
-    if (!sessionIdToUse) {
-      console.error("No sessionId available even after createChat");
+    if (!chatIdToUse) {
+      console.error("No chatId available even after createChat");
       return;
     }
 
     // bool var that is true if the current message being sent to api is the first message of a new chat
-    const isFirstMessageInSession = isNewChat && messages.length === 0;
+    const isFirstMessageInChat = isNewChat && messages.length === 0;
 
     // 1) show the user's message immediately
     setMessages(prev => [...prev, { role: "user", content: userInput}]);
@@ -308,7 +308,7 @@ export default function HomeMock() {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ 
           message: userInput,
-          sessionId: sessionIdToUse
+          chat_id: chatIdToUse
         }),
       });
 
@@ -317,7 +317,7 @@ export default function HomeMock() {
       // 3) append assistant response
       setMessages(prev => [...prev, { role: "assistant", content: data.reply}]);
 
-      if (isFirstMessageInSession) {
+      if (isFirstMessageInChat) {
         // tell SideNav to refetch / get updated title
         setSideNavRefreshKey(k => k + 1);
         // optional: no longer treat it as a “new chat” after first message
@@ -332,13 +332,13 @@ export default function HomeMock() {
   };
 
 
-  console.log("current homeMoke sessionId = " + currSessionId);
+  console.log("current homeMoke chatId = " + currchatId);
   console.log("this is the current message list: " + JSON.stringify(messages))
 
-  // this is called when a chat in the nav bar is selected it clears messages list so that findMessages() will get triggered and sets current session id to the sessionId of the chat.
-  const handleSelectChat = (sessionId: string, isNewChatFlag: boolean) => {
+  // this is called when a chat in the nav bar is selected it clears messages list so that findMessages() will get triggered and sets current chat id to the chatId of the chat.
+  const handleSelectChat = (chatId: string, isNewChatFlag: boolean) => {
     setMessages([]);
-    setCurrSessionId(sessionId);
+    setCurrchatId(chatId);
     setIsNewChat(isNewChatFlag);
   };
 
@@ -358,7 +358,7 @@ export default function HomeMock() {
         <SideNav 
           open={sidebarOpen} 
           onClose={() => setSidebarOpen(false)} 
-          onSelectSession={handleSelectChat} 
+          onSelectChat={handleSelectChat} 
           refreshKey={sideNavRefreshKey}
         />
 

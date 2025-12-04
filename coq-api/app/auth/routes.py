@@ -9,12 +9,14 @@ def login():
     email = data.get("email", " ")
     password = data.get("password", " ")
 
-    res, status = verify_login(email, password)
-    print(status, res)
+    res = verify_login(email, password)
+    print(res)
 
-    return jsonify(res), status
+    return jsonify(res)
 
-@bp.route("/signup", methods=["GET"])
+
+
+@bp.route("/signup", methods=["POST"])
 def signup():
     data = request.get_json(force=True)
     name = data.get("name", "")
@@ -23,7 +25,23 @@ def signup():
     password = data.get("password", "")
     conf_pass = data.get("confirm_pass", "")
 
-    if password == conf_pass:
-        res = verify_signup(name, email, phone, password)
-    else:
-        print("there should be an error handle here maybe") #####
+    print("password:", password, "conf_pass:", conf_pass)
+
+    if password != conf_pass:
+        return jsonify({
+            "ok": False,
+            "error": "passwords dont match"
+        })
+
+    insertRes = verify_signup(name, email, phone, password)
+    
+    if not insertRes:
+        return jsonify({
+            "ok": False,
+            "message": "insert failed"
+        })
+    
+    return jsonify ({
+        "ok": True,
+        "message": "user created"
+    })

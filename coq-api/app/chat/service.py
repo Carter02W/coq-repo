@@ -1,15 +1,14 @@
 from datetime import datetime
-from flask import current_app
 
-from app import messageDB, sessionDB, client
+from app import messageDB, client
 
 
-def message_memory_list(sess_id: str):
+def message_memory_list(chat_id: str):
     docs_array: list[dict] = []
 
     cursor = messageDB.messagesColl.find(
-        {"sessionId": sess_id},
-        {"_id": 0, "sessionId": 0, "created_at": 0}
+        {"chat_id": chat_id},
+        {"_id": 0, "chat_id": 0, "created_at": 0}
     ).sort("_id", -1)
 
     for i, doc in enumerate(cursor):
