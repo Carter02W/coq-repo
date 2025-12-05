@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 
 type SideNavProps = {
@@ -22,8 +22,12 @@ function SideNav({open, onClose, onSelectChat, refreshKey}: SideNavProps) {
   const [chatList, setChatList] = useState<ChatList[]>([]);
   const [selectId, setSelectedId] = useState<string | null>(null);
 
+  const searchParams = useSearchParams();
+  const user_id = searchParams.get("user_id");
+
+
   function onClickUser() {
-    router.push("/login");
+    router.push("/");
   };
 
 
@@ -32,7 +36,13 @@ function SideNav({open, onClose, onSelectChat, refreshKey}: SideNavProps) {
 
     // listChats() fetches and creates an array(ChatList) of all current saved chats 
     const listChats = async () => {
-      const res = await fetch("http://127.0.0.1:8080/listChats");
+      const res = await fetch("http://127.0.0.1:8080/listChats", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          user_id: user_id,
+        })
+      });
 
       const data = await res.json();
       setChatList(data);
@@ -40,12 +50,16 @@ function SideNav({open, onClose, onSelectChat, refreshKey}: SideNavProps) {
     }
 
       listChats();
-  }, [refreshKey]);
+  }, [refreshKey, user_id]);
 
   // createChat() triggered when new chat button is clicked, fetches and creates an array(ChatList) of all current saved chats after a new chat has been created. ps should there be a main list of chats in test-api and these functions just updated it? 
   const createChat = async () => {
     const createChatFunc = await fetch("http://127.0.0.1:8080/createChat", {
-      method: "GET"
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        user_id: user_id,
+      })
     });
 
     const data = await createChatFunc.json();
@@ -234,6 +248,9 @@ export default function HomeMock() {
   const [isNewChat, setIsNewChat] = useState(false);
   const [sideNavRefreshKey, setSideNavRefreshKey] = useState(0);
 
+  const searchParams = useSearchParams();
+  const user_id = searchParams.get("user_id");
+
   const showEmptyState = (isNewChat && messages.length === 0) || (!currchatId && messages.length === 0);
 
   //this will create a message list based off of the current chat (ex. call on a function in test-api to pass a list of messages associated with currchatId)
@@ -248,7 +265,7 @@ export default function HomeMock() {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
-          chat_id: currchatId // this is the issue I think
+          chat_id: currchatId
         }),
       });
 
@@ -308,7 +325,8 @@ export default function HomeMock() {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ 
           message: userInput,
-          chat_id: chatIdToUse
+          chat_id: chatIdToUse,
+          user_id: user_id,
         }),
       });
 

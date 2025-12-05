@@ -33,6 +33,7 @@ def chat():
     data = request.get_json(force=True)
     user_input = data.get("message", "").strip()
     curr_chat = data.get("chat_id", "").strip()
+    user_id = data.get("user_id", "")
 
     print("chat received current chat:", curr_chat, "\n")
 
@@ -55,7 +56,7 @@ def chat():
 
     print(
         "\n\n",
-        list(chatDB.find_chats()),
+        list(chatDB.find_chats(user_id)),
         "\nCurrent Chat =",
         curr_chat,
         "\nUser Input =",
@@ -63,7 +64,7 @@ def chat():
         "\n",
     )
 
-    # rename "New chat" chatss
+    # find the current selected chat, and updates name if name is "New chat"
     chat_doc = chatDB.chatsColl.find_one(
         {"chat_id": curr_chat},
         {"title": 1},
@@ -79,10 +80,12 @@ def chat():
 
 
 
-@bp.route("/listChats", methods=["GET"])
+@bp.route("/listChats", methods=["POST"])
 def list_chats():
+    data = request.get_json(force=True)
+    user_id = data.get("user_id", " ")
     chats_array = []
-    for sess in chatDB.find_chats():
+    for sess in chatDB.find_chats(user_id):
         sess["_id"] = str(sess["_id"])
         chats_array.insert(0, sess)
     return jsonify(chats_array)
@@ -90,9 +93,12 @@ def list_chats():
 
 
 
-@bp.route("/createChat", methods=["GET"])
+@bp.route("/createChat", methods=["POST"])
 def create_chat():
-    chatDB.create_chat()
+    data = request.get_json(force=True)
+    user_id = data.get("user_id", "")
+
+    chatDB.create_chat(user_id)
     # reuse list_chats logic
     res = list_chats().json  # Flask Response -> dict via .json on response
     print(res)

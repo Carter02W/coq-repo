@@ -103,7 +103,11 @@ function LogInWindow({ onGoToSignUp }: LoginWindowProps) {
       return;
     }
 
-    router.push("/chat");
+    const user_id = data.user._id
+
+    console.log("passing user_id:", user_id);
+
+    router.push(`/chat?user_id=${user_id}`);
   };
 
   function clickShowPass() {
@@ -342,7 +346,20 @@ function SignUpWindow({ onGoToLogin }: SignUpProps) {
       return;
     }
 
-   router.push("/chat");
+    const findNewUser = await fetch("http://127.0.0.1:8080/findNewUser", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        email: fields.email.value,
+      })
+    });
+
+    const findNewUserData = await findNewUser.json()
+
+    const user_id = findNewUserData._id
+    console.log("findNewUser user_id:", user_id)
+
+    router.push(`/chat?user_id=${user_id}`);
   };
 
   return (

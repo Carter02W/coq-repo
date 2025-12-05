@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-from .service import verify_login, verify_signup
+from .service import verify_login, verify_signup, find_user_id
 
 bp = Blueprint("auth", __name__)
 
@@ -45,3 +45,15 @@ def signup():
         "ok": True,
         "message": "user created"
     })
+
+
+@bp.route("/findNewUser", methods=["POST"])
+def findNewUser():
+    data = request.get_json(force=True)
+    email = data.get("email", " ")
+
+    user = find_user_id(email)
+
+    print("findNewUser returns:", user)
+
+    return jsonify(user)

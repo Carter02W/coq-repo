@@ -8,20 +8,21 @@ class ChatDatabase:
         self.chat_id = None  # setup, no action yet
         self.title = None
 
-    def create_chat(self, first_message="New chat"):
+    def create_chat(self, user_id:str):
         self.chat_id = str(uuid.uuid4())
         self.chatsColl.insert_one({
             "chat_id": self.chat_id,
-            "title": first_message,
+            "user_id": user_id,
+            "title": "New chat",
             "created_at": datetime.now()
         })
 
     def delete_all_chats(self):
         self.chatsColl.delete_many({})
 
-    def find_chats(self):
+    def find_chats(self, user_id:str):
         chatsArray = []
-        for chat in self.chatsColl.find():
+        for chat in self.chatsColl.find({"user_id": user_id}):
             chatsArray.append(chat)
         return chatsArray
     
