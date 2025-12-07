@@ -1,0 +1,409 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+
+
+type SideNavProps = {
+  open: boolean;
+  onClose: () => void;
+  onSelectChat: (id: string, isNewChat: boolean) => void;
+  refreshKey: number;
+};
+
+type ChatList = {
+  _id: string;
+  chat_id: string;
+  title: string;
+};
+
+function SideNav({open, onClose, onSelectChat, refreshKey}: SideNavProps) {
+  const router = useRouter();
+  const [chatList, setChatList] = useState<ChatList[]>([]);
+  const [selectId, setSelectedId] = useState<string | null>(null);
+
+  const searchParams = useSearchParams();
+  const user_id = searchParams.get("user_id");
+
+
+  function onClickUser() {
+    router.push("/");
+  };
+
+
+   // populating list of chats everytime the sideNav renders
+  useEffect(() => {
+
+    // listChats() fetches and creates an array(ChatList) of all current saved chats 
+    const listChats = async () => {
+      const res = await fetch("http://127.0.0.1:8080/listChats", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          user_id: user_id,
+        })
+      });
+
+      const data = await res.json();
+      setChatList(data);
+      console.log("listChats() data = ", data)
+    }
+
+      listChats();
+  }, [refreshKey, user_id]);
+
+  // createChat() triggered when new chat button is clicked, fetches and creates an array(ChatList) of all current saved chats after a new chat has been created. ps should there be a main list of chats in test-api and these functions just updated it? 
+  const createChat = async () => {
+    const createChatFunc = await fetch("http://127.0.0.1:8080/createChat", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        user_id: user_id,
+      })
+    });
+
+    const data = await createChatFunc.json();
+    console.log(data);
+    setChatList(data);
+
+    if (data.length > 0) {  // calling handleChatClicked on new chats so that they are selected on creation and give home mock the current chat_id
+      const newChat = data[0];
+      if (newChat.title === "New chat") {
+        const chatId = newChat.chat_id;
+        const title = newChat.title;
+        handleChatClicked(chatId, title);
+      }
+    }
+
+  }
+
+  function handleChatClicked(id: string, title: string) {
+    setSelectedId(id);
+    const isNewChat = title === "New chat";
+    onSelectChat(id, isNewChat);
+    console.log("you clicked on a new chat: ", id, " | isNewChat: ", isNewChat)
+  }
+
+  return (
+    <>
+      <aside
+        id="app-sidenav"
+        className={[
+          "fixed inset-y-0 left-0 z-50 w-64 pointer-events-auto",
+          "transition-transform duration-300 will-change-transform",
+          open ? "translate-x-0" : "-translate-x-full",
+          "lg:translate-x-0",
+        ].join(" ")}
+        //aria-hidden={!open}
+      >
+        <div className="flex h-dvh gap-2 border-r border-r-black/10 bg-neutral-50/30 dark:border-r-white/10 dark:bg-black/30 backdrop-blur shadow-xl">
+          <nav className="flex h-full flex-col items-stretch w-full gap-1 p-3 sm:p-4">
+            {/* Brand + close */}
+            <div className="mb-1 flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-500 px-3 py-2 text-white shadow">
+                <span className="text-sm font-semibold tracking-wide">COQ</span>
+              </div>
+              <button
+                onClick={onClose}
+                className="rounded-md px-2 py-1 text-xs hover:bg-black/5 dark:hover:bg-white/10 lg:hidden"
+                aria-label="Close sidebar"
+              >
+                Close
+              </button>
+            </div>
+
+            {/* Primary Nav */}
+            {["FLASHCARDS", "NOTES", "Q&A", "ANALYSIS"].map((label) => (
+              <button
+                key={label}
+                className="flex items-center gap-2 rounded-md px-3 py-2 text-sm text-left hover:bg-black/5 dark:hover:bg-white/10"
+              >
+                {label}
+              </button>
+            ))}
+
+            <div className="my-2 h-px bg-black/35 dark:bg-white/15" />
+
+            {/* Chats */}
+            <button 
+              onClick={createChat} 
+              className="flex items-center gap-2 rounded-md px-3 py-2 text-sm text-left hover:bg-black/5 dark:hover:bg-white/10"
+            >
+              NEW CHAT
+            </button>
+
+            <section className="flex-1 overflow-y-auto rounded-md scrollbar-hide">
+              <ul className="space-y-1 pr-1">
+                {chatList.map(chat => (
+                  <li key={chat.chat_id}>
+                    <button 
+                      onClick={() => {handleChatClicked(chat.chat_id, chat.title)}} 
+                      className={[
+                        "w-full truncate rounded-md px-3 py-2 text-left text-sm",
+                        selectId === chat.chat_id
+                          ? "bg-black/10"
+                          : "hover:bg-black/5"
+                      ].join(" ")}
+                    >
+                      {chat.title}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </section>
+
+            <div className="my-2 h-px bg-black/35 dark:bg-white/15" />
+
+            {/* Login pill */}
+            <div className="mb-1 flex items-center gap-2 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-500 px-3 py-2 text-white shadow">
+              <button onClick={onClickUser} className="text-sm font-semibold tracking-wide">CW</button>
+            </div>
+          </nav>
+        </div>
+      </aside>
+
+      {/* Drawer backdrop (only below lg) */}
+      {/* Clicking it closes the drawer */}
+      <button
+        onClick={onClose}
+        className={`fixed inset-0 z-40 bg-black/40 lg:hidden ${open ? "block" : "hidden"}`}
+        aria-label="Close sidebar backdrop"
+      />
+    </>
+  );
+}
+
+
+type ChatBubbleProps = {
+  role: "user" | "assistant";
+  children: React.ReactNode;
+};
+
+function ChatBubble({ role, children }: ChatBubbleProps) {
+  const isUser = role === "user";
+  return (
+    <div className={`flex w-full ${isUser ? "justify-end" : "justify-start"}`}>
+      <div
+        className={`max-w-[80%] rounded-2xl px-4 py-3 text-[15px] leading-relaxed shadow-sm sm:max-w-[70%] ${
+          isUser
+            ? "bg-indigo-600 text-white"
+            : "bg-white/80 ring-1 ring-black/5 dark:bg-neutral-900/70 dark:ring-white/10"
+        }`}
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
+
+type BottomBarProps = {
+  onSend: (userInput: string) => void | Promise<void>;
+  className?: string;
+};
+
+function BottomBar({ onSend, className = "" }: BottomBarProps) {
+  const [value, setValue] = useState("");
+
+  const handleSubmit = (e?: React.FormEvent) => {
+    e?.preventDefault();
+    const v = value.trim();
+    if (!v) return;
+    void onSend(v);
+    setValue("");
+  };
+
+  return (
+    <div className={`fixed bottom-0 z-40 flex justify-center px-4 pb-4 pt-2 ${className}`}>
+      <div className="w-full max-w-3xl rounded-full border border-black/5 bg-white/80 shadow-2xl backdrop-blur supports-[backdrop-filter]:bg-white/60 dark:border-white/10 dark:bg-neutral-900/60">
+        <form onSubmit={handleSubmit} className="flex items-center gap-2 px-3 py-2 sm:px-4 sm:py-2.5">
+          <input
+            id="bottombarFormInput"
+            placeholder="Send a message…"
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            className="flex-1 bg-transparent px-1 text-[15px] outline-none placeholder:text-black/40 dark:placeholder:text-white/40"
+          />
+          <button
+            type="submit"              // <— important
+            className="rounded-full px-3 py-1.5 text-sm font-medium hover:bg-black/5 active:scale-[0.98] dark:hover:bg-white/10"
+            aria-label="Send"
+          >
+            Send
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+type ChatMessage = {
+  role: "user" | "assistant";
+  content: string;
+};
+
+export default function HomeMock() {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [currchatId, setCurrchatId] = useState<string | null>(null);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [isNewChat, setIsNewChat] = useState(false);
+  const [sideNavRefreshKey, setSideNavRefreshKey] = useState(0);
+
+  const searchParams = useSearchParams();
+  const user_id = searchParams.get("user_id");
+
+  const showEmptyState = (isNewChat && messages.length === 0) || (!currchatId && messages.length === 0);
+
+  //this will create a message list based off of the current chat (ex. call on a function in test-api to pass a list of messages associated with currchatId)
+  useEffect(() => {
+    if (!currchatId) return;
+    if (messages.length > 0) return;
+
+    console.log("currchatId useEffect: currchatId = ", currchatId)
+
+    const findMessages = async () => {
+      const res = await fetch("http://127.0.0.1:8080/listMessages", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          chat_id: currchatId
+        }),
+      });
+
+      const data = (await res.json()) as ChatMessage[];
+
+      setMessages(
+        data.map((obj) => ({
+          role: obj.role,
+          content: obj.content,
+        }))
+      );
+    }
+
+    findMessages();
+  }, [currchatId, messages.length]);
+
+  
+
+  const handleSend = async(userInput: string) => {
+
+    let chatIdToUse = currchatId;
+
+    if (!chatIdToUse) {
+
+        const createChatFunc = await fetch("http://127.0.0.1:8080/createChat", {
+        method: "GET"
+      });
+
+      const data = await createChatFunc.json();
+
+      if (Array.isArray(data) && data.length > 0) {  // calling handleChatClicked on new chats so that they are selected on creation and give home mock the current chat_id
+        const newChat = data[0];
+        if (newChat.title === "New chat") {
+          chatIdToUse = newChat.chat_id;
+          setCurrchatId(chatIdToUse)
+          setIsNewChat(true);
+          console.log("hadleSend: setting currchatId = ", chatIdToUse)
+        };
+      };
+    };
+
+    if (!chatIdToUse) {
+      console.error("No chatId available even after createChat");
+      return;
+    }
+
+    // bool var that is true if the current message being sent to api is the first message of a new chat
+    const isFirstMessageInChat = isNewChat && messages.length === 0;
+
+    // 1) show the user's message immediately
+    setMessages(prev => [...prev, { role: "user", content: userInput}]);
+
+    try {
+      // 2) call python backend
+      const res = await fetch("http://127.0.0.1:8080/chat", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ 
+          message: userInput,
+          chat_id: chatIdToUse,
+          user_id: user_id,
+        }),
+      });
+
+      if (!res.ok) throw new Error('HTTP ${res.status}'); 
+      const data = await res.json();
+      // 3) append assistant response
+      setMessages(prev => [...prev, { role: "assistant", content: data.reply}]);
+
+      if (isFirstMessageInChat) {
+        // tell SideNav to refetch / get updated title
+        setSideNavRefreshKey(k => k + 1);
+        // optional: no longer treat it as a “new chat” after first message
+        setIsNewChat(false);
+      }
+      
+    
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setMessages(prev => [...prev, {role: "assistant", content: `Sorry, request failed: ${msg}`}]);
+    }
+  };
+
+
+  console.log("current homeMoke chatId = " + currchatId);
+  console.log("this is the current message list: " + JSON.stringify(messages))
+
+  // this is called when a chat in the nav bar is selected it clears messages list so that findMessages() will get triggered and sets current chat id to the chatId of the chat.
+  const handleSelectChat = (chatId: string, isNewChatFlag: boolean) => {
+    setMessages([]);
+    setCurrchatId(chatId);
+    setIsNewChat(isNewChatFlag);
+  };
+
+
+    return (
+      <div className="relative min-h-dvh bg-[radial-gradient(ellipse_at_top,rgba(120,119,198,0.08),transparent_45%),radial-gradient(ellipse_at_bottom,rgba(30,30,30,0.06),transparent_55%)] text-neutral-900 antialiased dark:text-neutral-100">
+          {/* sidebar toggle */}
+          <button onClick={() => setSidebarOpen(true)}
+            className="fixed left-3 top-3 z-[60] rounded-lg px-3 py-2 text-sm shadow ring-1 ring-black/10 backdrop-blur bg-white/70 dark:bg-neutral-900/70 dark:ring-white/10 lg:hidden"
+            aria-label="Open sidebar"
+            aria-expanded={sidebarOpen}
+            aria-controls="app-sidenav"
+            >
+            |||
+          </button>
+
+        <SideNav 
+          open={sidebarOpen} 
+          onClose={() => setSidebarOpen(false)} 
+          onSelectChat={handleSelectChat} 
+          refreshKey={sideNavRefreshKey}
+        />
+
+        {/* Main content (kept centered) */}
+        <div className="lg:pl-64">
+          <div className="mx-auto w-full max-w-3xl flex flex-col gap-4 px-4 pb-32 pt-28 sm:gap-6 sm:pb-36">
+            {showEmptyState ? (
+              <div className="grid place-items-center py-28 text-center">
+                <h1 className="mb-2 text-2xl font-semibold sm:text-3xl">What are we studying today?</h1>
+                <p className="max-w-xl text-balance text-sm opacity-70">
+                  Type a prompt below, or pick a tool from the header (Analysis, Flashcards, Notes, Q&amp;A).
+                </p>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-3">
+                {messages.map((m, i) => (
+                  <ChatBubble key={i} role={m.role}>
+                    {m.content}
+                  </ChatBubble>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* <ConversationNav />  ✅ add this outside main content */}
+          <BottomBar onSend={handleSend} className="left-0 right-0 lg:left-64"/>
+        </div>
+      </div>
+);
+}
